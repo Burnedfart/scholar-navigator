@@ -53,9 +53,9 @@ app.use(express.urlencoded({ extended: true }));
 // Morgan logs each request with method, URL, status, and response time
 app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
-// Serve static files from the 'public' directory
-// This serves our frontend HTML, CSS, and JavaScript
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the root directory
+// This ensures GitHub Pages can find index.html at the top level
+app.use(express.static(path.join(__dirname, '.')));
 
 // Apply session management middleware
 // Creates/validates session for each request
