@@ -17,6 +17,18 @@
 // Centralized state management for the application
 // ============================================================================
 
+// ============================================================================
+// APPLICATION CONFIGURATION
+// ============================================================================
+
+const CONFIG = {
+    // When hosting on GitHub Pages, change this to your production Vercel URL
+    // example: 'https://practice-problems-99.vercel.app'
+    API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? ''
+        : 'https://practice-problems-99.vercel.app'
+};
+
 const state = {
     sessionId: null,
     isLoading: false,
@@ -91,7 +103,7 @@ const elements = {
  */
 async function checkServerHealth() {
     try {
-        const response = await fetch('/api/health');
+        const response = await fetch(`${CONFIG.API_BASE_URL}/api/health`);
         const data = await response.json();
         return { connected: true, data };
     } catch (error) {
@@ -106,7 +118,7 @@ async function checkServerHealth() {
  * @returns {Promise<Object>} Encoding result
  */
 async function encodeUrl(url) {
-    const response = await fetch('/api/encode', {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/api/encode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -121,7 +133,7 @@ async function encodeUrl(url) {
  * @returns {Promise<Object>} Proxy response
  */
 async function fetchThroughProxy(url) {
-    const response = await fetch('/api/proxy', {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/api/proxy`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
