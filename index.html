@@ -275,16 +275,49 @@
 
     <script src="uv/uv.bundle.js"></script>
     <script src="uv/uv.config.js"></script>
-    <script>
-        // Register Ultraviolet Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js', { scope: './' })
-                .then(reg => {
-                    console.log('✅ UV Service Worker registered');
-                })
-                .catch(err => {
-                    console.error('❌ UV Service Worker registration failed:', err);
-                });
+    <script src="uv/bare-mux.js"></script>
+    <script type="module">
+        // Initialize Bare-Mux Transport and Register Ultraviolet Service Worker
+        // Using bare-as-module3 for cross-origin Bare server support (GitHub Pages → Vercel)
+
+        const bareServerUrl = 'https://practice-problems-99.vercel.app/bare/';
+
+        async function initializeProxy() {
+            if (!('serviceWorker' in navigator)) {
+                console.error('❌ Service Workers not supported');
+                return;
+            }
+
+            try {
+                // 1. Register the service worker
+                const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+                console.log('✅ UV Service Worker registered');
+
+                // 2. Wait for the service worker to be ready
+                await navigator.serviceWorker.ready;
+                console.log('✅ Service Worker is ready');
+
+                // 3. Set up Bare-Mux connection with the SharedWorker
+                const connection = new BareMux.BareMuxConnection('/uv/bare-mux-worker.js');
+
+                // 4. Configure the transport using bare-as-module3
+                // This module allows communication with a remote Bare server
+                await connection.setTransport('/uv/index.mjs', [bareServerUrl]);
+
+                console.log('✅ Bare-Mux transport configured to:', bareServerUrl);
+                console.log('🚀 Proxy is ready! You can now browse through the proxy.');
+
+            } catch (err) {
+                console.error('❌ UV Setup failed:', err);
+                console.error('Details:', err.message);
+            }
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeProxy);
+        } else {
+            initializeProxy();
         }
     </script>
     <script src="js/app.js"></script>
