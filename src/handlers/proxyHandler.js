@@ -279,10 +279,11 @@ function resolveUrl(url, baseUrl) {
 
 /**
  * Creates a proxy URL for a given resource URL
+ * Uses /api/resource which serves raw content (not JSON-wrapped)
  */
 function makeProxyUrl(resourceUrl, proxyBase) {
     if (!resourceUrl) return null;
-    return `${proxyBase}/api/proxy?url=${encodeURIComponent(resourceUrl)}`;
+    return `${proxyBase}/api/resource?url=${encodeURIComponent(resourceUrl)}`;
 }
 
 /**
@@ -350,7 +351,7 @@ function transformHtml(html, baseUrl, proxyBase = '') {
                     return url;
                 }
                 const resolved = new URL(url, BASE_URL).href;
-                return PROXY_BASE + '/api/proxy?url=' + encodeURIComponent(resolved);
+                return PROXY_BASE + '/api/resource?url=' + encodeURIComponent(resolved);
             } catch(e) {
                 return url;
             }
@@ -385,7 +386,82 @@ function transformHtml(html, baseUrl, proxyBase = '') {
     return html;
 }
 
+/**
+ * Handles resource requests - serves content directly without JSON wrapper
+ * Used for CSS, JS, images, fonts, etc.
+ */
+async function handleResourceRequest(req, res, next) {
+    try {
+        let targetUrl = req.query.url;
+
+        if (!targetUrl) {
+            return res.status(400).send('URL parameter required');
+        }
+
+        // Decode URL if it's encoded
+        targetUrl = decodeURIComponent(targetUrl);
+
+        console.log(`[Resource] Fetching: ${targetUrl}`);
+
+        const proxyHeaders = buildProxyHeaders(req);
+
+        const targetResponse = await fetch(targetUrl, {
+            method: 'GET',
+            headers: proxyHeaders,
+            timeout: PROXY_CONFIG.timeout,
+            redirect: 'follow'
+        });
+
+        const contentType = targetResponse.headers.get('content-type') || 'application/octet-stream';
+
+        // Set appropriate headers
+        res.set('Content-Type', contentType);
+        res.set('Access-Control-Allow-Origin', '*');
+
+        // Remove security headers that might cause issues
+        PROXY_CONFIG.stripHeaders.forEach(header => {
+            res.removeHeader(header);
+        });
+
+        // For text content, rewrite URLs if it's CSS
+        if (contentType.includes('text/css')) {
+            let cssContent = await targetResponse.text();
+            const protocol = req.secure ? 'https' : 'http';
+            const proxyBase = `${protocol}://${req.get('host')}`;
+
+            // Rewrite url() in CSS
+            cssContent = cssContent.replace(/url\(["']?([^"')]+)["']?\)/gi, (match, url) => {
+                const resolvedUrl = resolveUrl(url.trim(), targetUrl);
+                if (!resolvedUrl) return match;
+                return `url("${proxyBase}/api/resource?url=${encodeURIComponent(resolvedUrl)}")`;
+            });
+
+            // Rewrite @import
+            cssContent = cssContent.replace(/@import\s+["']([^"']+)["']/gi, (match, url) => {
+                const resolvedUrl = resolveUrl(url.trim(), targetUrl);
+                if (!resolvedUrl) return match;
+                return `@import "${proxyBase}/api/resource?url=${encodeURIComponent(resolvedUrl)}"`;
+            });
+
+            res.send(cssContent);
+        } else if (contentType.includes('javascript') || contentType.includes('text/')) {
+            // Send text content directly
+            const textContent = await targetResponse.text();
+            res.send(textContent);
+        } else {
+            // For binary content (images, fonts), pipe directly
+            const buffer = await targetResponse.buffer();
+            res.send(buffer);
+        }
+
+    } catch (error) {
+        console.error('[Resource] Error:', error.message);
+        res.status(500).send('Failed to fetch resource');
+    }
+}
+
 module.exports = {
     handleProxyRequest,
+    handleResourceRequest,
     PROXY_CONFIG
 };

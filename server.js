@@ -164,6 +164,13 @@ app.get('/api/proxy', proxyHandler.handleProxyRequest);
  */
 app.post('/api/proxy', proxyHandler.handleProxyRequest);
 
+/**
+ * GET /api/resource
+ * Serves resources (CSS, JS, images, fonts) directly without JSON wrapper
+ * This is used by the proxied HTML to load assets
+ */
+app.get('/api/resource', proxyHandler.handleResourceRequest);
+
 // ============================================================================
 // ERROR HANDLING
 // Educational Note: Error handling middleware catches errors from route
