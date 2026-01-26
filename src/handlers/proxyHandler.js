@@ -462,7 +462,11 @@ async function handleResourceRequest(req, res, next) {
 
         // Set appropriate headers
         res.set('Content-Type', contentType);
-        res.set('Access-Control-Allow-Origin', '*');
+
+        // Reflect origin to support credentials
+        const origin = req.headers.origin || '*';
+        res.set('Access-Control-Allow-Origin', origin);
+        res.set('Access-Control-Allow-Credentials', 'true');
 
         // Remove security headers that might cause issues
         PROXY_CONFIG.stripHeaders.forEach(header => {
