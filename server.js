@@ -1,21 +1,22 @@
 /**
- * Practice Problems Server
+ * Practice Problems Server with Ultraviolet Proxy
  * 
- * This server demonstrates web content retrieval and architectural flow.
+ * This server now uses Ultraviolet + Bare Server for full web proxy support.
  * 
- * EDUCATIONAL PURPOSE:
- * - Understand HTTP request/response flow
- * - Learn about URL encoding and safe data transmission
- * - See how proxies handle headers and content
- * - Observe session management in practice
+ * ARCHITECTURE:
+ * - Express handles the frontend and API routes
+ * - Bare Server handles proxied requests at /bare/
+ * - Ultraviolet client-side Service Worker intercepts all requests
  */
 
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const { createBareServer } = require('@nebula-services/bare-server-node');
 
-// Import our custom modules (educational utilities)
+// Import our custom modules
 const { encodeUrl, decodeUrl, isValidUrl } = require('./src/utils/urlEncoder');
 const sessionManager = require('./src/middleware/sessionManager');
 const errorHandler = require('./src/middleware/errorHandler');
@@ -26,6 +27,8 @@ const proxyHandler = require('./src/handlers/proxyHandler');
 // ============================================================================
 
 const app = express();
+const server = http.createServer(app);
+const bareServer = createBareServer('/bare/');
 const PORT = process.env.PORT || 3000;
 
 // ============================================================================
@@ -34,7 +37,6 @@ const PORT = process.env.PORT || 3000;
 
 // 1. GLOBAL CORS (Must be first!)
 app.use((req, res, next) => {
-    // Reflect the origin to support credentials
     const origin = req.headers.origin;
 
     if (origin) {
@@ -47,7 +49,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, X-Session-ID');
 
-    // Handle Pre-flight requests
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -59,131 +60,91 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
-// Serve static files from the root directory
-// We use a guard to ensure we don't serve the server code itself
-app.use((req, res, next) => {
-    if (req.path === '/server.js' || req.path.startsWith('/src')) {
-        return res.status(403).send('Access Forbidden');
-    }
-    next();
-}, express.static(path.join(__dirname, '.')));
-
-// Apply session management middleware
-// Creates/validates session for each request
+// 3. Session Management
 app.use(sessionManager.middleware);
 
 // ============================================================================
-// API ROUTES
-// Educational Note: Routes define how the server responds to different
-// HTTP requests. Each route has a method (GET, POST, etc.) and a path.
+// STATIC FILES - Serve Ultraviolet client files
 // ============================================================================
 
-/**
- * GET /api/health
- * Health check endpoint - useful for monitoring server status
- */
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        sessionId: req.sessionId
-    });
+// Serve UV static files from node_modules
+app.use('/uv/', express.static(path.join(__dirname, 'node_modules', '@titaniumnetwork-dev', 'ultraviolet', 'dist')));
+
+// Serve our custom UV config (overrides the default)
+app.use('/uv/', express.static(path.join(__dirname, 'uv')));
+
+// Serve the service worker at root
+app.get('/sw.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'sw.js'));
 });
 
-/**
- * GET /api/session
- * Returns current session information
- * Educational: Demonstrates stateful session tracking
- */
-app.get('/api/session', (req, res) => {
-    const session = sessionManager.getSession(req.sessionId);
-    res.json({
-        sessionId: req.sessionId,
-        created: session?.created,
-        requestCount: session?.requestCount || 0,
-        lastAccess: session?.lastAccess
-    });
-});
+// Serve our static frontend
+app.use(express.static(path.join(__dirname, './')));
 
-/**
- * POST /api/encode
- * Encodes a URL for safe transmission
- * Educational: Shows how data is encoded for transport
- */
+// ============================================================================
+// API ENDPOINTS
+// ============================================================================
+
+// URL Encoding endpoints (keep for educational purposes)
 app.post('/api/encode', (req, res) => {
     const { url } = req.body;
-
-    if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
+    if (!url || !isValidUrl(url)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid URL provided'
+        });
     }
-
-    const encoded = encodeUrl(url);
     res.json({
+        success: true,
         original: url,
-        encoded: encoded,
-        explanation: 'The URL has been Base64 encoded for safe transmission through the proxy'
+        encoded: encodeUrl(url)
     });
 });
 
-/**
- * POST /api/decode
- * Decodes an encoded URL
- * Educational: Shows the reverse of the encoding process
- */
 app.post('/api/decode', (req, res) => {
     const { encoded } = req.body;
-
     if (!encoded) {
-        return res.status(400).json({ error: 'Encoded string is required' });
-    }
-
-    try {
-        const decoded = decodeUrl(encoded);
-        res.json({
-            encoded: encoded,
-            decoded: decoded,
-            explanation: 'The Base64 encoded string has been decoded back to the original URL'
+        return res.status(400).json({
+            success: false,
+            error: 'No encoded URL provided'
         });
-    } catch (error) {
-        res.status(400).json({ error: 'Invalid encoded string' });
     }
+    res.json({
+        success: true,
+        encoded: encoded,
+        decoded: decodeUrl(encoded)
+    });
 });
 
-/**
- * GET /api/proxy
- * Main proxy endpoint - fetches content from a target URL
- * 
- * Query Parameters:
- * - url: The target URL to fetch (can be plain or encoded)
- * - encoded: Set to 'true' if the URL is Base64 encoded
- * 
- * Educational: This is the core proxy functionality. It demonstrates:
- * 1. Receiving a request from the client
- * 2. Decoding/validating the target URL
- * 3. Forwarding the request to the target server
- * 4. Receiving the response from the target
- * 5. Returning the response to the client
- */
+// Legacy proxy endpoints (keep for fallback/simple sites)
 app.get('/api/proxy', proxyHandler.handleProxyRequest);
-
-/**
- * POST /api/proxy
- * Alternative proxy endpoint using POST (for longer URLs)
- */
 app.post('/api/proxy', proxyHandler.handleProxyRequest);
-
-/**
- * GET /api/resource
- * Serves resources (CSS, JS, images, fonts) directly without JSON wrapper
- * This is used by the proxied HTML to load assets
- */
 app.get('/api/resource', proxyHandler.handleResourceRequest);
 
 // ============================================================================
+// BARE SERVER ROUTING (for Ultraviolet)
+// ============================================================================
+
+// Route bare server requests
+server.on('request', (req, res) => {
+    if (bareServer.shouldRoute(req)) {
+        bareServer.routeRequest(req, res);
+    } else {
+        app(req, res);
+    }
+});
+
+// Handle WebSocket upgrades (critical for sites like Discord, YouTube)
+server.on('upgrade', (req, socket, head) => {
+    if (bareServer.shouldRoute(req)) {
+        bareServer.routeUpgrade(req, socket, head);
+    } else {
+        socket.end();
+    }
+});
+
+// ============================================================================
 // ERROR HANDLING
-// Educational Note: Error handling middleware catches errors from route
-// handlers and provides consistent error responses to clients.
 // ============================================================================
 
 app.use(errorHandler.middleware);
@@ -192,24 +153,25 @@ app.use(errorHandler.middleware);
 // SERVER STARTUP
 // ============================================================================
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log('╔════════════════════════════════════════════════════════════╗');
-    console.log('║               PRACTICE PROBLEMS SERVER                     ║');
+    console.log('║          ULTRAVIOLET PROXY SERVER                          ║');
     console.log('╠════════════════════════════════════════════════════════════╣');
     console.log(`║  Server running at: http://localhost:${PORT}                  ║`);
     console.log('║                                                            ║');
-    console.log('║  This platform demonstrates:                               ║');
-    console.log('║  • Web architectural flow                                  ║');
-    console.log('║  • URL encoding/decoding                                   ║');
-    console.log('║  • Session management                                      ║');
-    console.log('║  • Error handling                                          ║');
+    console.log('║  Features:                                                 ║');
+    console.log('║  • Bare Server at /bare/                                   ║');
+    console.log('║  • Ultraviolet client at /uv/                              ║');
+    console.log('║  • WebSocket support for YouTube/Discord                   ║');
+    console.log('║  • Full site compatibility                                 ║');
     console.log('╚════════════════════════════════════════════════════════════╝');
 });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
     console.log('\\nShutting down gracefully...');
+    server.close();
     process.exit(0);
 });
 
-module.exports = app;
+module.exports = { app, server };

@@ -424,30 +424,59 @@ async function handleFormSubmit(event) {
     setLoading(true);
 
     try {
-        // First, get the encoded URL for display
+        // First, get the encoded URL for display (educational)
         const encodeResult = await encodeUrl(url);
         updateEncodingDisplay(url, encodeResult.encoded);
 
-        // Then fetch through proxy
-        const proxyResult = await fetchThroughProxy(url);
+        // Check if Ultraviolet is available
+        if (typeof __uv$config !== 'undefined' && typeof Ultraviolet !== 'undefined') {
+            // Use Ultraviolet for full site support
+            const encodedUrl = __uv$config.prefix + __uv$config.encodeUrl(url);
 
-        if (proxyResult.success) {
-            // Display content directly - redirects are now handled server-side
-            updateMetadata(proxyResult.metadata);
-            displayContent(proxyResult.content);
+            // Update metadata with basic info
+            updateMetadata({
+                statusCode: 200,
+                domain: new URL(url).hostname,
+                contentType: 'text/html (via Ultraviolet)',
+                contentLength: 'N/A',
+                fetchTimeMs: 0
+            });
+
+            // Navigate the iframe to the UV-proxied URL
+            elements.contentFrame.src = encodedUrl;
+
+            // Show the rendered content
+            elements.emptyState?.classList.add('hidden');
+            elements.renderedTab?.classList.remove('hidden');
+            elements.errorDisplay?.classList.add('hidden');
+
+            // Update source tab with info
+            state.currentContent = `<!-- Loaded via Ultraviolet Proxy -->\n<!-- URL: ${url} -->\n<!-- Proxied URL: ${encodedUrl} -->`;
+            if (elements.sourceCode) {
+                elements.sourceCode.textContent = state.currentContent;
+            }
         } else {
-            displayError(proxyResult.error);
+            // Fallback to old proxy method for simpler sites
+            const proxyResult = await fetchThroughProxy(url);
+
+            if (proxyResult.success) {
+                updateMetadata(proxyResult.metadata);
+                displayContent(proxyResult.content);
+            } else {
+                displayError(proxyResult.error);
+            }
         }
 
     } catch (error) {
         displayError({
             code: 'FETCH_ERROR',
-            message: 'Failed to communicate with the proxy server',
+            message: 'Failed to load the page',
             details: {
-                explanation: 'Could not reach the proxy server. Make sure it is running.',
+                explanation: error.message || 'An unexpected error occurred.',
                 suggestions: [
+                    'Make sure the URL is valid',
                     'Check that the server is running (npm run dev)',
-                    'Check your browser console for errors'
+                    'Try a different website'
                 ]
             }
         });
