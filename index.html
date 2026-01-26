@@ -282,6 +282,10 @@
 
         const bareServerUrl = 'https://practice-problems-99.vercel.app/bare/';
 
+        // Calculate the base path for GitHub Pages subdirectory support
+        // This converts "./uv/file.js" style paths to "/web-dev-learing/uv/file.js" style absolute paths
+        const basePath = new URL('./', window.location.href).pathname;
+
         async function initializeProxy() {
             if (!('serviceWorker' in navigator)) {
                 console.error('❌ Service Workers not supported');
@@ -298,12 +302,18 @@
                 console.log('✅ Service Worker is ready');
 
                 // 3. Set up Bare-Mux connection with the SharedWorker
-                // Use relative paths for GitHub Pages subdirectory compatibility
-                const connection = new BareMux.BareMuxConnection('./uv/bare-mux-worker.js');
+                // bare-mux requires absolute paths starting with /
+                const workerPath = basePath + 'uv/bare-mux-worker.js';
+                const transportPath = basePath + 'uv/index.mjs';
+
+                console.log('📍 Base path:', basePath);
+                console.log('📍 Worker path:', workerPath);
+                console.log('📍 Transport path:', transportPath);
+
+                const connection = new BareMux.BareMuxConnection(workerPath);
 
                 // 4. Configure the transport using bare-as-module3
-                // This module allows communication with a remote Bare server
-                await connection.setTransport('./uv/index.mjs', [bareServerUrl]);
+                await connection.setTransport(transportPath, [bareServerUrl]);
 
                 console.log('✅ Bare-Mux transport configured to:', bareServerUrl);
                 console.log('🚀 Proxy is ready! You can now browse through the proxy.');
