@@ -30,32 +30,34 @@ const PORT = process.env.PORT || 3000;
 
 // ============================================================================
 // MIDDLEWARE SETUP
-// Educational Note: Middleware functions process requests before they reach
-// route handlers. They can modify request/response objects, end requests,
-// or pass control to the next middleware.
 // ============================================================================
 
-// Enable CORS (Cross-Origin Resource Sharing)
-// This allows the frontend to make requests to our proxy server
-app.use(cors({
-    origin: '*', // In production, you'd restrict this
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'X-Session-ID']
-}));
+// 1. GLOBAL CORS (Must be first!)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, X-Session-ID');
 
-// Parse JSON request bodies
+    // Handle Pre-flight requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// 2. Logging and Parsing
 app.use(express.json());
-
-// Parse URL-encoded request bodies (form submissions)
 app.use(express.urlencoded({ extended: true }));
-
-// Request logging for educational observation
-// Morgan logs each request with method, URL, status, and response time
 app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
 // Serve static files from the root directory
-// This ensures GitHub Pages can find index.html at the top level
-app.use(express.static(path.join(__dirname, '.')));
+// We use a guard to ensure we don't serve the server code itself
+app.use((req, res, next) => {
+    if (req.path === '/server.js' || req.path.startsWith('/src')) {
+        return res.status(403).send('Access Forbidden');
+    }
+    next();
+}, express.static(path.join(__dirname, '.')));
 
 // Apply session management middleware
 // Creates/validates session for each request
