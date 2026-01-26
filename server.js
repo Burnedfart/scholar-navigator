@@ -43,9 +43,15 @@ app.use((req, res, next) => {
         'http://127.0.0.1:3000'
     ];
 
-    if (origin && allowedOrigins.some(o => origin.startsWith(o))) {
+    const origin = req.headers.origin;
+
+    // Dynamically allow Vercel deployments (this is important!)
+    if (origin && (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin))) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Credentials', 'true');
+    } else if (!origin) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        res.header('Access-Control-Allow-Origin', '*');
     } else {
         // Fallback or explicit allow for debugging
         res.header('Access-Control-Allow-Origin', '*');
