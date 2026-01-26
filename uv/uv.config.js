@@ -4,7 +4,7 @@
  */
 self.__uv$config = {
     prefix: new URL('./service/', self.location.href).pathname,
-    bare: 'https://practice-problems-99.vercel.app/bare/',
+    bare: 'https://uv.studentportal.lol/bare/',
     encodeUrl: Ultraviolet.codec.xor.encode,
     decodeUrl: Ultraviolet.codec.xor.decode,
     handler: '/uv/uv.handler.js',
