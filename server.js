@@ -227,5 +227,9 @@ process.on('SIGTERM', () => {
 });
 
 module.exports = (req, res) => {
-    app(req, res);
+    if (bareServer.shouldRoute(req)) {
+        bareServer.routeRequest(req, res);
+    } else {
+        app(req, res);
+    }
 };
