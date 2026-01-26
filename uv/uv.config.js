@@ -14,7 +14,7 @@ const basePath = currentPath.endsWith('/')
 
 self.__uv$config = {
     prefix: basePath + 'service/',
-    bare: 'https://uv.studentportal.lol/bare/',
+    bare: 'https://practice-problems-99.vercel.app/bare/',
     encodeUrl: Ultraviolet.codec.xor.encode,
     decodeUrl: Ultraviolet.codec.xor.decode,
     handler: basePath + 'uv/uv.handler.js',

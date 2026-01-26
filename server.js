@@ -228,11 +228,6 @@ process.on('SIGTERM', () => {
 
 module.exports = (req, res) => {
     if (bareServer.shouldRoute(req)) {
-        // Manually inject CORS headers for the Bare Server (bypasses Express middleware)
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-
         bareServer.routeRequest(req, res);
     } else {
         app(req, res);
