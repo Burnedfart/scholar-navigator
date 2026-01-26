@@ -92,20 +92,29 @@ app.get('/uv/uv.config.js', (req, res) => {
     res.sendFile(filePath);
 });
 
-// Serve UV static files from node_modules (Manual fallback)
+// Serve UV static files - check local uv folder first, then node_modules
 app.get('/uv/:file', (req, res) => {
     const filename = req.params.file;
-    const filePath = path.join(__dirname, 'node_modules', '@titaniumnetwork-dev', 'ultraviolet', 'dist', filename);
+    const fs = require('fs');
 
-    console.log(`[UV] Serving ${filename} from:`, filePath);
-
-    if (require('fs').existsSync(filePath)) {
+    // First, check local uv folder (for bare-mux, custom configs, etc.)
+    const localPath = path.join(__dirname, 'uv', filename);
+    if (fs.existsSync(localPath)) {
+        console.log(`[UV] Serving ${filename} from local:`, localPath);
         res.setHeader('Content-Type', 'application/javascript');
-        res.sendFile(filePath);
-    } else {
-        console.error(`[UV] File not found: ${filePath}`);
-        res.status(404).send('File not found');
+        return res.sendFile(localPath);
     }
+
+    // Fallback to node_modules for UV core files
+    const nmPath = path.join(__dirname, 'node_modules', '@titaniumnetwork-dev', 'ultraviolet', 'dist', filename);
+    if (fs.existsSync(nmPath)) {
+        console.log(`[UV] Serving ${filename} from node_modules:`, nmPath);
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.sendFile(nmPath);
+    }
+
+    console.error(`[UV] File not found: ${filename}`);
+    res.status(404).send('File not found');
 });
 
 // Serve the service worker at root

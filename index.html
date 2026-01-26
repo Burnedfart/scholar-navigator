@@ -298,11 +298,12 @@
                 console.log('✅ Service Worker is ready');
 
                 // 3. Set up Bare-Mux connection with the SharedWorker
-                const connection = new BareMux.BareMuxConnection('/uv/bare-mux-worker.js');
+                // Use relative paths for GitHub Pages subdirectory compatibility
+                const connection = new BareMux.BareMuxConnection('./uv/bare-mux-worker.js');
 
                 // 4. Configure the transport using bare-as-module3
                 // This module allows communication with a remote Bare server
-                await connection.setTransport('/uv/index.mjs', [bareServerUrl]);
+                await connection.setTransport('./uv/index.mjs', [bareServerUrl]);
 
                 console.log('✅ Bare-Mux transport configured to:', bareServerUrl);
                 console.log('🚀 Proxy is ready! You can now browse through the proxy.');

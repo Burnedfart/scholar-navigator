@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "@mercuryworkshop/bare-as-module3": "^2.2.5",
+    "@mercuryworkshop/bare-mux": "^2.1.8",
     "@nebula-services/bare-server-node": "^2.0.4",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "cors": "^2.8.5",
