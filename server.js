@@ -60,6 +60,16 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, X-Session-ID');
 
+    // CSP - Permissive policy for proxying
+    res.header(
+        'Content-Security-Policy',
+        "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; " +
+        "style-src 'self' 'unsafe-inline' https:; " +
+        "img-src 'self' data: blob: https:; " +
+        "connect-src 'self' https: wss:;"
+    );
+
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
