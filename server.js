@@ -37,12 +37,17 @@ const PORT = process.env.PORT || 3000;
 
 // 1. GLOBAL CORS (Must be first!)
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'https://burnedfart.github.io',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ];
 
-    if (origin) {
+    if (origin && allowedOrigins.some(o => origin.startsWith(o))) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Credentials', 'true');
     } else {
+        // Fallback or explicit allow for debugging
         res.header('Access-Control-Allow-Origin', '*');
     }
 
