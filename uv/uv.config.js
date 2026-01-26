@@ -3,7 +3,7 @@
  * This tells UV how to proxy URLs
  */
 self.__uv$config = {
-    prefix: '/service/',
+    prefix: location.pathname.substr(0, location.pathname.lastIndexOf('/')) + '/service/',
     bare: 'https://practice-problems-99.vercel.app/bare/',
     encodeUrl: Ultraviolet.codec.xor.encode,
     decodeUrl: Ultraviolet.codec.xor.decode,
