@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
 // IMPORTANT: This is the PROXY route, NOT where the library files are stored
 const swLocation = self.location.href;
 const baseURL = swLocation.substring(0, swLocation.lastIndexOf('/') + 1);
-const prefix = "/service/";
+const prefix = new URL("./service/", baseURL).pathname;
 console.log('SW: 🔧 Computed prefix:', prefix);
 
 // Scramjet 2.0.0-alpha defines $scramjetLoadWorker on globalThis

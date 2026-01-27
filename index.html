@@ -10,7 +10,8 @@
         // 1. Calculate Base Paths early
         window.APP_BASE_URL = new URL("./", window.location.href).href;
         // IMPORTANT: Prefix is the PROXY route, NOT where files are stored
-        window.SCRAMJET_PREFIX = "/service/";
+        // Make it relative to the deployment path (e.g., /web-dev-learing/service/)
+        window.SCRAMJET_PREFIX = new URL("./service/", window.APP_BASE_URL).pathname;
         console.log('🔧 [INIT] Base URL:', window.APP_BASE_URL);
         console.log('🔧 [INIT] Scramjet Prefix:', window.SCRAMJET_PREFIX);
 
