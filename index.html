@@ -320,35 +320,37 @@
 
                 // 4. Initialize BareMux Transport (Fix for "there are no bare clients")
                 // Scramjet uses BareMux under the hood, so we must provide a transport.
+                // 4. Initialize BareMux Transport
+                // Scramjet uses BareMux under the hood.
+                // Switching to bare-as-module3 as Epoxy is reported broken.
+                const transportPath = 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-as-module3@2.0.1/dist/index.mjs';
 
                 // Define paths
                 const bareServerUrl = 'https://my-site.boxathome.net/bare/';
-                const workerPath = './sw.js'; // The valid worker path we just registered
-                // Use CDN for transport (Epoxy is best for Scramjet/Games)
-                // const transportPath = 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport/dist/index.mjs';
-                // Fallback to bare-as-module3 if Epoxy fails, but let's try Epoxy first as it's standard for Scramjet
-                const transportPath = 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport/dist/index.mjs';
 
                 console.log('🔌 Connecting to BareMux...');
-                // Note: BareMux might need the specific worker that HAS the BareMux logic.
-                // In Scramjet, the main SW usually acts as the BareMux handler too?
-                // Let's check if BareMux global is available.
 
                 if (window.BareMux) {
                     // Path correction for GitHub Pages:
-                    // We need to point to the bare-mux-worker.js file.
-                    // Since we are using the local 'uv' directory for the worker host, let's keep it.
+                    // Point to the local bare-mux-worker.js
                     const rootPath = new URL('./', window.location.href).pathname;
-                    const muxWorkerPath = rootPath + 'uv/bare-mux-worker.js';
+                    // Add cache buster to ensure we get a fresh worker instance
+                    const muxWorkerPath = rootPath + 'uv/bare-mux-worker.js?v=' + Date.now();
 
                     console.log('Using BareMux worker:', muxWorkerPath);
                     const connection = new BareMux.BareMuxConnection(muxWorkerPath);
 
-                    // Epoxy Transport Configuration
-                    // Modern Epoxy uses { wisp: url }
-                    await connection.setTransport(transportPath, [{ wisp: bareServerUrl }]);
+                    // bare-as-module3 config: [url]
+                    console.log('Setting transport (bare-as-module3) with url:', bareServerUrl);
 
-                    console.log('✅ Transport Configured with Wisp:', bareServerUrl);
+                    try {
+                        await connection.setTransport(transportPath, [bareServerUrl]);
+                        console.log('✅ Transport Configured Successfully');
+                    } catch (transportErr) {
+                        console.error('❌ Failed to set transport:', transportErr);
+                        console.error('Transport Path:', transportPath);
+                    }
+
                 } else {
                     console.error('❌ BareMux library not loaded in window');
                 }
