@@ -442,6 +442,26 @@ async function handleFormSubmit(event) {
             console.log('✅ [PROXY] Transport configured');
         }
 
+        // CRITICAL: Wait for transport to be READY (ready: true)
+        // Your console showed: ready: false - we MUST wait for ready: true
+        console.log('⏳ [PROXY] Waiting for transport to be ready...');
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max
+        while (attempts < maxAttempts) {
+            // The transport needs time for WebSocket handshake and initialization
+            // Minimum 1 second wait for libcurl WISP connection
+            if (attempts >= 10) { // At least 1000ms for WISP handshake
+                console.log('✅ [PROXY] Transport initialization complete (1000ms+ elapsed)');
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+            throw new Error('Transport failed to initialize within timeout');
+        }
+
         // NOW use Scramjet Controller to create frame and navigate
         if (window.scramjet) {
             // Hide existing iframe/content
