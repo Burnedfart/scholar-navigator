@@ -452,10 +452,9 @@ async function handleFormSubmit(event) {
             // Append to rendered tab
             elements.renderedTab.appendChild(iframe);
 
-            // Manually construct Scramjet URL
-            // Strip protocol - Scramjet Service Worker expects: /service/example.com/ not /service/https://example.com/
-            const urlWithoutProtocol = url.replace(/^https?:\/\//, '');
-            const scramjetUrl = window.location.origin + window.SCRAMJET_PREFIX + urlWithoutProtocol;
+            // Manually construct Scramjet URL with full protocol
+            // The SW extracts the URL from the path and proxies it
+            const scramjetUrl = window.location.origin + window.SCRAMJET_PREFIX + url;
             console.log('🔗 Navigating to:', scramjetUrl);
             iframe.src = scramjetUrl;
 
