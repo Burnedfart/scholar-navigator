@@ -336,17 +336,19 @@
 
                 if (window.BareMux) {
                     // Path correction for GitHub Pages:
+                    // We need to point to the bare-mux-worker.js file.
+                    // Since we are using the local 'uv' directory for the worker host, let's keep it.
                     const rootPath = new URL('./', window.location.href).pathname;
                     const muxWorkerPath = rootPath + 'uv/bare-mux-worker.js';
 
+                    console.log('Using BareMux worker:', muxWorkerPath);
                     const connection = new BareMux.BareMuxConnection(muxWorkerPath);
-                    await connection.setTransport(transportPath, [{ wisp: bareServerUrl }]);
-                    // Note: Epoxy uses { wisp: url } or just [url] depending on version.
-                    // Bare-as-module3 uses [url].
-                    // Let's use the array format which is safer for generic bare:
-                    await connection.setTransport(transportPath, [bareServerUrl]);
 
-                    console.log('✅ Transport Configured');
+                    // Epoxy Transport Configuration
+                    // Modern Epoxy uses { wisp: url }
+                    await connection.setTransport(transportPath, [{ wisp: bareServerUrl }]);
+
+                    console.log('✅ Transport Configured with Wisp:', bareServerUrl);
                 } else {
                     console.error('❌ BareMux library not loaded in window');
                 }
