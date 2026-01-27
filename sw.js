@@ -12,21 +12,31 @@ self.addEventListener('activate', (event) => {
     console.log('SW: ⚡ Clients claimed');
 });
 
+// Calculate prefix relative to SW location to ensure routing works immediately
+// e.g. .../repo/sw.js -> .../repo/ -> .../repo/scramjet/
+const swLocation = self.location.href;
+const baseURL = swLocation.substring(0, swLocation.lastIndexOf('/') + 1);
+const prefix = new URL("scramjet/", baseURL).pathname;
+console.log('SW: 🔧 Computed prefix:', prefix);
+
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
-const scramjet = new ScramjetServiceWorker();
+const scramjet = new ScramjetServiceWorker({
+    prefix: prefix
+});
 
 async function handleRequest(event) {
+    // Ensure config is loaded (defaults to constructor config if not reconfigured)
     await scramjet.loadConfig();
 
-    // Check if we need to route via Scramjet
+    let response;
     if (scramjet.route(event)) {
-        return scramjet.fetch(event);
+        response = await scramjet.fetch(event);
+    } else {
+        response = await fetch(event.request);
     }
 
-    // Normal fetch implementation with COOP/COEP injection
-    const response = await fetch(event.request);
-
-    // Create a new response with the same body and status
+    // Inject COOP/COEP headers into EVERY response
+    // This is required because the main page is isolated, so iframes must be too.
     const newHeaders = new Headers(response.headers);
     newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
