@@ -275,23 +275,10 @@
         </footer>
     </div>
 
-    <!-- Scramjet Bundle (from jsdelivr npm CDN) - Reverted as Statically 404'd -->
-    <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.codecs.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.bundle.js"></script>
-    <!-- BareMux (from jsdelivr npm CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@latest/dist/index.js"></script>
-
-    <script>
-        // DEBUG: Check what globals were exported
-        console.log('🔍 [DEBUG] Globals check:');
-        console.log('  - window.$scramjetLoadController:', window.$scramjetLoadController);
-        console.log('  - window.Scramjet:', window.Scramjet);
-        console.log('  - window.scramjet:', window.scramjet);
-
-        // Find any variable starting with $scramjet or Scramjet
-        const potentialExports = Object.keys(window).filter(k => k.toLowerCase().includes('scramjet'));
-        console.log('  - Potential Scramjet exports:', potentialExports);
-    </script>
+    <!-- BareMux -->
+    <script src="/baremux/index.js"></script>
+    <!-- Scramjet -->
+    <script src="/scram/scramjet.all.js"></script>
 
     <script>
         // Initialize Scramjet Proxy with WISP
@@ -304,160 +291,61 @@
             }
             console.log('✅ [MAIN] Service Worker API available');
 
-            // Check if required libraries loaded
-            console.log('🔍 [MAIN] Checking if libraries loaded...');
-
-            let loadController = window.$scramjetLoadController;
-
-            // Npm package compatibility: Check for __scramjet$bundle
-            if (typeof loadController === 'undefined' && window.__scramjet$bundle) {
-                console.log('✅ [MAIN] Found __scramjet$bundle. Keys:', Object.keys(window.__scramjet$bundle));
-
-                if (window.__scramjet$bundle.ScramjetController) {
-                    loadController = () => window.__scramjet$bundle;
-                }
-            }
-
-            // Check Codecs
-            if (typeof loadController === 'undefined' && window.__scramjet$codecs) {
-                console.log('✅ [MAIN] Found __scramjet$codecs. Keys:', Object.keys(window.__scramjet$codecs));
-                if (window.__scramjet$codecs.ScramjetController) {
-                    console.log('✅ [MAIN] Found ScramjetController in codecs!');
-                    loadController = () => window.__scramjet$codecs;
-                }
-            }
-
-            if (typeof loadController === 'undefined') {
-                console.warn('⚠️ [MAIN] $scramjetLoadController is still undefined. Checking other locals...');
-
-                // Debug: Print all globals that might match
-                const potentialKeys = Object.keys(window).filter(k => k.toLowerCase().includes('scramjet'));
-                console.log('  - Found potential keys:', potentialKeys);
-
-                if (potentialKeys.length > 0) {
-                    potentialKeys.forEach(k => {
-                        const val = window[k];
-                        if (val && typeof val === 'object') {
-                            console.log(`  - Keys of ${k}:`, Object.keys(val));
-                            if (val.ScramjetController) {
-                                console.log(`✅ [MAIN] Found ScramjetController in ${k}`);
-                                loadController = () => val;
-                            }
-                        }
-                    });
-                }
-            }
-
-            if (typeof loadController !== 'function') {
-                console.error('❌ [MAIN] CRITICAL: Could not find Scramjet loader function.');
-                console.error('  - Please check console for keys of scramjet bundles');
-                return;
-            }
-
-            if (typeof BareMux === 'undefined') {
-                console.error('❌ [MAIN] BareMux not loaded! Check script tags.');
-                return;
-            }
-            console.log('✅ [MAIN] All required libraries loaded');
-
-            // Define $scramjetLoadController globally if we found a broad replacement, 
-            // so we don't break downstream code if it relies on it.
-            window.$scramjetLoadController = loadController;
-
             try {
-                // 1. Register the Scramjet service worker
-                console.log('📝 [MAIN] Attempting to register service worker at ./sw.js...');
-                let registration;
-                try {
-                    registration = await navigator.serviceWorker.register('./sw.js', {
-                        scope: './',
-                        updateViaCache: 'none'
-                    });
-                    console.log('✅ [MAIN] Service Worker registered successfully');
-                    console.log('  - Active:', registration.active);
-                    console.log('  - Installing:', registration.installing);
-                    console.log('  - Waiting:', registration.waiting);
-                    console.log('  - Scope:', registration.scope);
-                } catch (regError) {
-                    console.error('❌ [MAIN] Service Worker registration failed:', regError);
-                    console.error('  - Error name:', regError.name);
-                    console.error('  - Error message:', regError.message);
-                    console.error('  - Error stack:', regError.stack);
-                    throw regError;
-                }
-
-                // 2. Wait for service worker to be ready
-                console.log('⏳ [MAIN] Waiting for service worker to be ready...');
-                const readyRegistration = await navigator.serviceWorker.ready;
-                console.log('✅ [MAIN] Service Worker is ready');
-                console.log('  - Active worker state:', readyRegistration.active.state);
-
-                // 3. Initialize Scramjet Controller
+                // 1. Initialize Scramjet Controller
                 console.log('🎮 [MAIN] Initializing Scramjet Controller...');
-                let ScramjetController;
-                try {
-                    const scramjetExports = $scramjetLoadController();
-                    console.log('  - Scramjet exports:', Object.keys(scramjetExports));
-                    ScramjetController = scramjetExports.ScramjetController;
-                    if (!ScramjetController) {
-                        throw new Error('ScramjetController not found in exports');
-                    }
-                } catch (scramjetError) {
-                    console.error('❌ [MAIN] Failed to load ScramjetController:', scramjetError);
-                    throw scramjetError;
+
+                // Wiki says: const { ScramjetController } = $scramjetLoadController();
+                if (typeof $scramjetLoadController === 'undefined') {
+                    throw new Error('$scramjetLoadController is undefined. Scramjet script not loaded correctly?');
                 }
+                const { ScramjetController } = $scramjetLoadController();
 
                 window.scramjet = new ScramjetController({
+                    files: {
+                        wasm: "/scram/scramjet.wasm.wasm",
+                        all: "/scram/scramjet.all.js",
+                        sync: "/scram/scramjet.sync.js",
+                    },
                     prefix: '/service/',
                     codec: 'xor'
                 });
-                console.log('  - Controller instance created');
 
                 await window.scramjet.init();
                 console.log('✅ [MAIN] Scramjet Controller initialized');
 
-                // 4. Setup BareMux connection with libcurl transport over WISP
+                // 2. Register Service Worker
+                console.log('📝 [MAIN] Registering Service Worker...');
+                const registration = await navigator.serviceWorker.register('sw.js', {
+                    scope: '/'
+                });
+                console.log('✅ [MAIN] Service Worker registered');
+
+                // 3. Setup BareMux connection
                 console.log('🔌 [MAIN] Setting up BareMux...');
-                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") +
-                    "://my-site.boxathome.net/wisp/";
-                console.log('  - WISP URL:', wispUrl);
+                // Use wss for secure, ws for insecure
+                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
 
-                try {
-                    window.bareMuxConnection = new BareMux.BareMuxConnection("https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@latest/dist/worker.js");
-                    console.log('  - BareMux connection created');
+                // Initialize BareMux connection
+                window.bareMuxConnection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
-                    // Set libcurl transport with WISP endpoint
-                    await window.bareMuxConnection.setTransport("https://cdn.jsdelivr.net/npm/@mercuryworkshop/libcurl-transport@latest/index.mjs", [
-                        { websocket: wispUrl }
-                    ]);
-                    console.log('✅ [MAIN] BareMux configured with libcurl transport');
-                } catch (bareMuxError) {
-                    console.error('❌ [MAIN] BareMux setup failed:', bareMuxError);
-                    throw bareMuxError;
-                }
+                // Set transport
+                // Note: server.js maps /libcurl/ to the package root. dist/index.mjs is the ESM entry.
+                await window.bareMuxConnection.setTransport("/libcurl/dist/index.mjs", [{ wisp: wispUrl }]);
 
+                console.log('✅ [MAIN] BareMux configured with libcurl transport');
                 console.log('🎉 [MAIN] Proxy initialization complete!');
 
             } catch (err) {
                 console.error('❌ [MAIN] Proxy Setup failed:', err);
-                console.error('Error details:', {
-                    name: err.name,
-                    message: err.message,
-                    stack: err.stack
-                });
+                console.error('Error details:', err);
             }
         }
 
         // Initialize when DOM is ready
-        console.log('📄 [MAIN] Document readyState:', document.readyState);
         if (document.readyState === 'loading') {
-            console.log('⏳ [MAIN] Waiting for DOMContentLoaded...');
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('✅ [MAIN] DOM loaded, starting initialization');
-                initializeProxy();
-            });
+            document.addEventListener('DOMContentLoaded', initializeProxy);
         } else {
-            console.log('✅ [MAIN] DOM already loaded, starting initialization immediately');
             initializeProxy();
         }
     </script>
