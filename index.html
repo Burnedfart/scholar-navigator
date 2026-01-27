@@ -332,7 +332,8 @@
             console.log('🔗 [MAIN] Base URL:', baseURL);
 
             // Calculate the prefix relative to the Base URL
-            const prefix = new URL("scramjet/", baseURL).pathname;
+            // Using 'lib/scramjet/' to match the physical directory structure
+            const prefix = new URL("lib/scramjet/", baseURL).pathname;
             console.log('🔧 [MAIN] Computed Scramjet prefix:', prefix);
 
             window.scramjet = new ScramjetController({
@@ -365,9 +366,9 @@
                         config: {
                             prefix: prefix,
                             files: {
-                                wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", location.href).href,
-                                all: new URL("./lib/scramjet/scramjet.all.js", location.href).href,
-                                sync: new URL("./lib/scramjet/scramjet.sync.js", location.href).href,
+                                wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", baseURL).href,
+                                all: new URL("./lib/scramjet/scramjet.all.js", baseURL).href,
+                                sync: new URL("./lib/scramjet/scramjet.sync.js", baseURL).href,
                             }
                         }
                     });

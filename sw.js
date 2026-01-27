@@ -13,15 +13,20 @@ self.addEventListener('activate', (event) => {
 });
 
 // Calculate prefix relative to SW location to ensure routing works immediately
-// e.g. .../repo/sw.js -> .../repo/ -> .../repo/scramjet/
+// Using 'lib/scramjet/' to match physical directory
 const swLocation = self.location.href;
 const baseURL = swLocation.substring(0, swLocation.lastIndexOf('/') + 1);
-const prefix = new URL("scramjet/", baseURL).pathname;
+const prefix = new URL("lib/scramjet/", baseURL).pathname;
 console.log('SW: 🔧 Computed prefix:', prefix);
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker({
-    prefix: prefix
+    prefix: prefix,
+    files: {
+        wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", baseURL).href,
+        all: new URL("./lib/scramjet/scramjet.all.js", baseURL).href,
+        sync: new URL("./lib/scramjet/scramjet.sync.js", baseURL).href,
+    }
 });
 
 async function handleRequest(event) {
