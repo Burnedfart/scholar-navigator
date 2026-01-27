@@ -1,13 +1,15 @@
 try {
-    try {
     importScripts("./lib/scramjet/scramjet.all.js");
-} catch (err) {
-    // If importScripts fails the SW should degrade gracefully and continue to serve network
-    console.error('SW: ❌ Failed to import scramjet library:', err);
-}
-    console.log('SW: ✅ Scramjet script imported');
+    console.log('SW: ✅ Scramjet script imported locally');
 } catch (e) {
-    console.error('SW: ❌ Failed to import Scramjet script:', e);
+    console.warn('SW: ⚠️ Failed to import local Scramjet script, trying CDN:', e);
+    try {
+        // Fallback to jsDelivr (GitHub source) which supports CORP
+        importScripts("https://cdn.jsdelivr.net/gh/MercuryWorkshop/scramjet@2.0.0-alpha/dist/scramjet.all.js");
+        console.log('SW: ✅ Scramjet script imported via CDN');
+    } catch (cdnErr) {
+        console.error('SW: ❌ Failed to import Scramjet script from CDN:', cdnErr);
+    }
 }
 
 

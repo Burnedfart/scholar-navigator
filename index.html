@@ -385,9 +385,9 @@
                 // Attempt additional fallbacks if initial load failed
                 const scramjetCandidates = [
                     new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
-                    new URL("./lib/scramjet/scramjet.bundle.js", window.APP_BASE_URL).href,
-                    new URL("/lib/scramjet/scramjet.all.js", window.location.origin).href,
-                    'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.all.js'
+                    // Use jsDelivr for GitHub because it supports CORP headers required for SharedArrayBuffer
+                    'https://cdn.jsdelivr.net/gh/MercuryWorkshop/scramjet@2.0.0-alpha/dist/scramjet.all.js',
+                    'https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@2.0.0-alpha/dist/scramjet.all.js'
                 ];
                 for (const src of scramjetCandidates) {
                     try {
