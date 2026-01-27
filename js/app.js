@@ -22,11 +22,10 @@
 // ============================================================================
 
 const CONFIG = {
-    // When hosting on GitHub Pages, change this to your production Vercel URL
-    // example: 'https://practice-problems-99.vercel.app'
+    // API Base URL for the proxy backend (Oracle Cloud)
     API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? ''
-        : 'https://practice-problems-99.vercel.app'
+        : 'http://147.224.9.78:3000'
 };
 
 const state = {
