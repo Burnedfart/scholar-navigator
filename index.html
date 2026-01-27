@@ -346,6 +346,10 @@
                         type: 'config',
                         config: {
                             prefix: window.SCRAMJET_PREFIX,
+                            wisp: (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/",
+                            transport: {
+                                path: new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href,
+                            },
                             files: {
                                 wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", window.APP_BASE_URL).href,
                                 all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
