@@ -1,26 +1,30 @@
 // Scramjet Configuration wrapper to handle GitHub Pages subdirectories
 (function () {
-    // 1. Determine the base path (e.g., "/repo-name/" or "/")
-    // This handles both local dev and GitHub Pages subdirectory deployments
-    const currentPath = self.location.pathname;
-    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/js/'));
-    // ^ Assumes this config is running from /js/scramjet.config.js or imported there
-    // If imported by SW at root, logic might differ. 
-    // Safer: Just use the Service Worker's scope or location if available, 
-    // but for a config file imported by window, we need to be careful.
+    // Dynamic base path detection that works in both window and service worker contexts
+    const pathname = self.location.pathname;
+    let rootPath;
 
-    // Let's use a simpler "relative to root" detection based on where index.html likely is.
-    // If we are in /repo/js/scramjet.config.js, we want /repo/service/
-
-    // Improved dynamic base path detection:
-    const pathParts = self.location.pathname.split('/');
-    // Remove the last segment (filename)
-    pathParts.pop();
-    // If we are in 'js' folder, go up one level
-    if (pathParts[pathParts.length - 1] === 'js') {
-        pathParts.pop();
+    // If we're in a service worker (sw.js at root) or in a /js/ subfolder
+    if (pathname.endsWith('/sw.js')) {
+        // Service worker context: /repo-name/sw.js -> /repo-name/
+        rootPath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+    } else if (pathname.includes('/js/')) {
+        // Window context loading from /js/ folder: /repo-name/js/file.js -> /repo-name/
+        const pathParts = pathname.split('/');
+        pathParts.pop(); // Remove filename
+        if (pathParts[pathParts.length - 1] === 'js') {
+            pathParts.pop(); // Remove 'js' folder
+        }
+        rootPath = pathParts.join('/') + '/';
+    } else {
+        // Fallback: just use the directory of the current file
+        rootPath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
     }
-    const rootPath = pathParts.join('/') + '/';
+
+    // Ensure rootPath is not empty (fallback to /)
+    if (!rootPath || rootPath === '') {
+        rootPath = '/';
+    }
 
     self.__scramjet$config = {
         // Dynamic prefix that includes the repo name if present
@@ -36,9 +40,9 @@
         worker: 'scramjet.worker.js',
         client: 'scramjet.client.js',
         codecs: 'scramjet.codecs.js',
-        // Config file path relative to root
-        config: 'js/scramjet.config.js'
+        // Config file path relative to root - this needs to be accessible from both contexts
+        config: rootPath + 'js/scramjet.config.js'
     };
 
-    console.log('configured scramjet with prefix:', self.__scramjet$config.prefix);
+    console.log('configured scramjet with prefix:', self.__scramjet$config.prefix, 'rootPath:', rootPath);
 })();
