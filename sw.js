@@ -30,21 +30,33 @@ const scramjet = new ScramjetServiceWorker({
 });
 
 async function handleRequest(event) {
-    // Ensure config is loaded (defaults to constructor config if not reconfigured)
+    const url = event.request.url;
+    console.log(`SW: 🔍 Intercepted: ${url}`);
+
+    // Ensure config is loaded
     await scramjet.loadConfig();
 
     let response;
-    if (scramjet.route(event)) {
-        response = await scramjet.fetch(event);
+    const isRouted = scramjet.route(event);
+    console.log(`SW: 🤖 Routing decision: ${isRouted ? 'PROXY' : 'NETWORK'} for ${url}`);
+
+    if (isRouted) {
+        try {
+            response = await scramjet.fetch(event);
+            console.log(`SW: ✅ Proxied response for ${url}`);
+        } catch (err) {
+            console.error(`SW: ❌ Proxy fetch failed for ${url}:`, err);
+            response = await fetch(event.request);
+        }
     } else {
         response = await fetch(event.request);
     }
 
     // Inject COOP/COEP headers into EVERY response
-    // This is required because the main page is isolated, so iframes must be too.
     const newHeaders = new Headers(response.headers);
     newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+    console.log(`SW: 🔒 Injected isolation headers for ${url}`);
 
     return new Response(response.body, {
         status: response.status,

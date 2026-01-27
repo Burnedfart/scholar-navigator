@@ -3,20 +3,38 @@
 
 <head>
     <!-- Cross-Origin Isolation for High Performance Proxying -->
-    <!-- Cross-Origin Isolation for High Performance Proxying -->
+    <!-- Cross-Origin Isolation and Service Worker Lifecycle -->
     <script>
-        if (!window.crossOriginIsolated && window.isSecureContext) {
-            console.log('🔄 [MAIN] Reloading for Cross-Origin Isolation...');
-            // Reload to let Service Worker inject headers
-            // Only reload once to avoid infinite loops if SW fails
-            if (!sessionStorage.getItem('coi_reloaded')) {
-                sessionStorage.setItem('coi_reloaded', 'true');
-                window.location.reload();
-            } else {
-                console.error('❌ [MAIN] Failed to achieve Cross-Origin Isolation after reload.');
-            }
-        } else {
-            sessionStorage.removeItem('coi_reloaded');
+        // 1. Calculate Base Paths early
+        window.APP_BASE_URL = new URL("./", window.location.href).href;
+        window.SCRAMJET_PREFIX = new URL("lib/scramjet/", window.APP_BASE_URL).pathname;
+        console.log('🔧 [INIT] Base URL:', window.APP_BASE_URL);
+        console.log('🔧 [INIT] Scramjet Prefix:', window.SCRAMJET_PREFIX);
+
+        // 2. Register Service Worker IMMEDIATELY
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .then(reg => {
+                    console.log('✅ [SW] Registered', reg.scope);
+                    return navigator.serviceWorker.ready;
+                })
+                .then(() => {
+                    console.log('✅ [SW] Ready and Active');
+
+                    // 3. Handle Cross-Origin Isolation after SW is ready
+                    if (!window.crossOriginIsolated && window.isSecureContext) {
+                        console.log('🔄 [INIT] SW active. Reloading for Isolation headers...');
+                        if (!sessionStorage.getItem('coi_reloaded')) {
+                            sessionStorage.setItem('coi_reloaded', 'true');
+                            window.location.reload();
+                        } else {
+                            console.error('❌ [INIT] Isolation failed after reload.');
+                        }
+                    } else {
+                        sessionStorage.removeItem('coi_reloaded');
+                    }
+                })
+                .catch(err => console.error('❌ [SW] Registration failed:', err));
         }
     </script>
     <meta charset="UTF-8">
@@ -298,50 +316,19 @@
     <script>
         // Initialize Scramjet Proxy with WISP
         // Logic adapted from scramjet-demo/public/index.js
+        // Initialize Scramjet Proxy using data from <head>
         async function initializeProxy() {
             console.log('🔧 [MAIN] Starting proxy initialization...');
             console.log('🔒 [MAIN] Cross-Origin Isolated:', window.crossOriginIsolated);
-            if (!window.crossOriginIsolated) {
-                console.warn('⚠️ [MAIN] Page is NOT cross-origin isolated. SharedArrayBuffer may be unavailable. BareMux transport might fail.');
-            }
-
-            if (!('serviceWorker' in navigator)) {
-                console.error('❌ [MAIN] Service Workers not supported in this browser');
-                return;
-            }
-            console.log('✅ [MAIN] Service Worker API available');
 
             const { ScramjetController } = $scramjetLoadController();
 
-            // Determine the base URL of the application, ensuring a trailing slash
-            // This prevents 'new URL()' from stripping the repository name if the current URL doesn't have a slash
-            // e.g. "https://site.com/repo" -> "https://site.com/repo/"
-            let baseURL = location.href;
-            if (!baseURL.endsWith('/')) {
-                if (baseURL.split('/').pop().includes('.')) {
-                    // It's a file like index.html, strip it
-                    baseURL = baseURL.substring(0, baseURL.lastIndexOf('/') + 1);
-                } else {
-                    // It's a directory without slash, add it
-                    baseURL += '/'; // This might be risky if it's not a dir, but for GH pages repo root it is.
-                    // Safer: just use the folder containing index.html
-                    // actually, safely generic:
-                    baseURL = new URL("./", location.href).href;
-                }
-            }
-            console.log('🔗 [MAIN] Base URL:', baseURL);
-
-            // Calculate the prefix relative to the Base URL
-            // Using 'lib/scramjet/' to match the physical directory structure
-            const prefix = new URL("lib/scramjet/", baseURL).pathname;
-            console.log('🔧 [MAIN] Computed Scramjet prefix:', prefix);
-
             window.scramjet = new ScramjetController({
-                prefix: prefix,
+                prefix: window.SCRAMJET_PREFIX,
                 files: {
-                    wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", baseURL).href,
-                    all: new URL("./lib/scramjet/scramjet.all.js", baseURL).href,
-                    sync: new URL("./lib/scramjet/scramjet.sync.js", baseURL).href,
+                    wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", window.APP_BASE_URL).href,
+                    all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
+                    sync: new URL("./lib/scramjet/scramjet.sync.js", window.APP_BASE_URL).href,
                 },
             });
 
@@ -349,43 +336,34 @@
             console.log('✅ [MAIN] Scramjet Controller initialized');
 
             try {
-                // Register Service Worker
-                const registration = await navigator.serviceWorker.register('./sw.js', {
-                    scope: './'
-                });
-                console.log('✅ [MAIN] Service Worker registered');
-
-                // Wait for SW to be active
+                // Connection to BareMux (already registered in <head>, so we just wait)
                 await navigator.serviceWorker.ready;
 
-                // Send configuration to Service Worker
-                // This is critical because SW needs to know the prefix to route requests
+                // Send latest configuration to Service Worker
                 if (navigator.serviceWorker.controller) {
                     navigator.serviceWorker.controller.postMessage({
                         type: 'config',
                         config: {
-                            prefix: prefix,
+                            prefix: window.SCRAMJET_PREFIX,
                             files: {
-                                wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", baseURL).href,
-                                all: new URL("./lib/scramjet/scramjet.all.js", baseURL).href,
-                                sync: new URL("./lib/scramjet/scramjet.sync.js", baseURL).href,
+                                wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", window.APP_BASE_URL).href,
+                                all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
+                                sync: new URL("./lib/scramjet/scramjet.sync.js", window.APP_BASE_URL).href,
                             }
                         }
                     });
                     console.log('📨 [MAIN] Configuration sent to Service Worker');
-                } else {
-                    console.warn('⚠️ [MAIN] Service Worker controller not found immediately');
                 }
 
                 // BareMux Connection
-                const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", location.href).href;
+                const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", window.APP_BASE_URL).href;
                 window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
 
                 const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
                 console.log('🔌 [MAIN] Wisp URL:', wispUrl);
 
                 // Set Transport
-                const transportPath = new URL("./lib/libcurl/index.mjs", location.href).href;
+                const transportPath = new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href;
                 await window.bareMuxConnection.setTransport(transportPath, [{ wisp: wispUrl }]);
                 console.log('✅ [MAIN] BareMux configured');
                 console.log('🎉 [MAIN] Proxy fully ready');
