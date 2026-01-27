@@ -349,10 +349,16 @@
             console.log('🔧 [MAIN] Starting proxy initialization...');
             console.log('🔒 [MAIN] Cross-Origin Isolated:', window.crossOriginIsolated);
 
-            // Scramjet 2.0.0-alpha uses __scramjet$bundle global
-            const scramjetBundle = window.__scramjet$bundle;
+            // Scramjet 2.0.0-alpha defines $scramjetLoadController on globalThis
+            let scramjetBundle;
+            if (typeof window.$scramjetLoadController === 'function') {
+                scramjetBundle = window.$scramjetLoadController();
+            } else if (window.__scramjet$bundle) {
+                scramjetBundle = window.__scramjet$bundle;
+            }
+
             if (!scramjetBundle) {
-                console.error('❌ [MAIN] Scramjet bundle not found! __scramjet$bundle is undefined.');
+                console.error('❌ [MAIN] Scramjet bundle not found! Neither $scramjetLoadController nor __scramjet$bundle are available.');
                 return;
             }
 

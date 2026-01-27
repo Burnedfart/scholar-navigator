@@ -19,10 +19,15 @@ const baseURL = swLocation.substring(0, swLocation.lastIndexOf('/') + 1);
 const prefix = new URL("lib/scramjet/", baseURL).pathname;
 console.log('SW: 🔧 Computed prefix:', prefix);
 
-// Scramjet 2.0.0-alpha uses __scramjet$bundle global
-const scramjetBundle = self.__scramjet$bundle;
-let scramjet;
+// Scramjet 2.0.0-alpha defines $scramjetLoadWorker on globalThis
+let scramjetBundle;
+if (typeof self.$scramjetLoadWorker === 'function') {
+    scramjetBundle = self.$scramjetLoadWorker();
+} else if (self.__scramjet$bundle) {
+    scramjetBundle = self.__scramjet$bundle;
+}
 
+let scramjet;
 if (scramjetBundle) {
     const { ScramjetServiceWorker } = scramjetBundle;
     scramjet = new ScramjetServiceWorker({
