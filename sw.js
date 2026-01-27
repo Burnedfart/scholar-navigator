@@ -1,5 +1,17 @@
 importScripts("./lib/scramjet/scramjet.all.js");
 
+
+// Ensure immediate control
+self.addEventListener('install', () => {
+    self.skipWaiting();
+    console.log('SW: ⏩ Skipped waiting');
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+    console.log('SW: ⚡ Clients claimed');
+});
+
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
 

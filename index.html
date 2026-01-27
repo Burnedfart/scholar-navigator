@@ -285,6 +285,10 @@
         // Logic adapted from scramjet-demo/public/index.js
         async function initializeProxy() {
             console.log('🔧 [MAIN] Starting proxy initialization...');
+            console.log('🔒 [MAIN] Cross-Origin Isolated:', window.crossOriginIsolated);
+            if (!window.crossOriginIsolated) {
+                console.warn('⚠️ [MAIN] Page is NOT cross-origin isolated. SharedArrayBuffer may be unavailable. BareMux transport might fail.');
+            }
 
             if (!('serviceWorker' in navigator)) {
                 console.error('❌ [MAIN] Service Workers not supported in this browser');
