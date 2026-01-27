@@ -4,7 +4,7 @@
  */
 
 // Import Scramjet core files from CDN
-importScripts('https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@latest/dist/client.js');
+importScripts('uv/bare-mux.js');
 importScripts('https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.codecs.js');
 importScripts('js/scramjet.config.js');
 importScripts('https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.bundle.js');
