@@ -3,9 +3,7 @@
 
 <head>
     <!-- Cross-Origin Isolation for High Performance Proxying -->
-    <!-- Core Proxy Libraries -->
-    <script src="./lib/baremux/index.js"></script>
-    <script src="./lib/scramjet/scramjet.all.js"></script>
+
 
     <!-- Cross-Origin Isolation and Service Worker Lifecycle -->
     <script>
@@ -31,14 +29,43 @@
                         if (!sessionStorage.getItem('coi_reloaded')) {
                             sessionStorage.setItem('coi_reloaded', 'true');
                             window.location.reload();
-                        } else {
-                            console.error('❌ [INIT] Isolation failed after reload.');
+                            return new Promise(() => { }); // Prevent execution until reload
                         }
                     } else {
                         sessionStorage.removeItem('coi_reloaded');
                     }
+
+                    // 4. Load Core Libraries after isolation/SW is ready
+                    console.log('📦 [INIT] Loading core libraries...');
+                    const loadScript = (src) => new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = src;
+                        s.onload = () => {
+                            console.log(`✅ [INIT] Loaded: ${src}`);
+                            resolve();
+                        };
+                        s.onerror = (e) => {
+                            console.error(`❌ [INIT] Failed to load: ${src}`, e);
+                            reject(e);
+                        };
+                        document.head.appendChild(s);
+                    });
+
+                    return Promise.all([
+                        loadScript(new URL("./lib/baremux/index.js", window.APP_BASE_URL).href),
+                        loadScript(new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href)
+                    ]);
                 })
-                .catch(err => console.error('❌ [SW] Registration failed:', err));
+                .then(() => {
+                    if (window.initializeProxy) {
+                        console.log('🎉 [INIT] Ready. Triggering proxy setup.');
+                        window.initializeProxy();
+                    } else {
+                        // Wait for DOM if initializeProxy is defined at footer
+                        document.addEventListener('DOMContentLoaded', () => window.initializeProxy?.());
+                    }
+                })
+                .catch(err => console.error('❌ [INIT] Master registration/load failed:', err));
         }
     </script>
     <meta charset="UTF-8">

@@ -86,11 +86,19 @@ async function handleRequest(event) {
     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
     console.log(`SW: 🔒 Injected isolation headers for ${url}`);
 
-    return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-    });
+    // Safety check for status code (0 is invalid for Response constructor)
+    const status = response.status === 0 ? 200 : response.status;
+
+    try {
+        return new Response(response.body, {
+            status: status,
+            statusText: response.statusText,
+            headers: newHeaders,
+        });
+    } catch (err) {
+        console.warn(`SW: ⚠️ Failed to wrap response for ${url} (possibly opaque), returning original:`, err);
+        return response;
+    }
 }
 
 self.addEventListener("fetch", (event) => {
