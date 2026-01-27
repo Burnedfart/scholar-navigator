@@ -294,39 +294,38 @@
 
             const { ScramjetController } = $scramjetLoadController();
 
+            // Calculate the prefix based on the current location
+            // This ensures it works on both localhost and GitHub Pages (e.g. /repo-name/scramjet/)
+            const prefix = new URL("scramjet/", location.href).pathname;
+            console.log('🔧 [MAIN] Computed Scramjet prefix:', prefix);
+
             window.scramjet = new ScramjetController({
+                prefix: prefix,
                 files: {
                     wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", location.href).href,
                     all: new URL("./lib/scramjet/scramjet.all.js", location.href).href,
                     sync: new URL("./lib/scramjet/scramjet.sync.js", location.href).href,
                 },
-                // Demo doesn't use prefix in constructor, it sets it later or relies on defaults?
-                // Demo: const scramjet = new ScramjetController({ files: { ... } });
-                // But user's wiki info said prefix... let's stick to demo code exactly.
-                // Wait, demo index.js doesn't pass prefix to constructor.
             });
 
             await window.scramjet.init();
             console.log('✅ [MAIN] Scramjet Controller initialized');
 
             try {
-                // Register Service Worker (demo uses text/javascript, we use text/javascript or module?)
-                // Demo uses: await navigator.serviceWorker.register(stockSW);
+                // Register Service Worker
                 const registration = await navigator.serviceWorker.register('./sw.js', {
                     scope: './'
                 });
                 console.log('✅ [MAIN] Service Worker registered');
 
                 // BareMux Connection
-                // Demo: const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
                 const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", location.href).href;
                 window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
 
                 const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
                 console.log('🔌 [MAIN] Wisp URL:', wispUrl);
 
-                // Demo: if ((await connection.getTransport()) !== "/libcurl/index.mjs") { ... }
-                // We will just force set it.
+                // Set Transport
                 const transportPath = new URL("./lib/libcurl/index.mjs", location.href).href;
                 await window.bareMuxConnection.setTransport(transportPath, [{ wisp: wispUrl }]);
                 console.log('✅ [MAIN] BareMux configured');
