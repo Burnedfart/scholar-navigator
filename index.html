@@ -425,8 +425,11 @@
 
             const { ScramjetController } = scramjetBundle;
 
+            const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/";
+
             window.scramjet = new ScramjetController({
                 prefix: window.SCRAMJET_PREFIX,
+                wisp: wispUrl,
                 files: {
                     wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", window.APP_BASE_URL).href,
                     all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
