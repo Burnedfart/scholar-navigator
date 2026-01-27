@@ -2,6 +2,8 @@
 <html lang="en">
 
 <head>
+    <!-- Cross-Origin Isolation for High Performance Proxying -->
+    <script src="https://cdn.jsdelivr.net/npm/coi-serviceworker@0.1.7/coi-serviceworker.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Practice Problems - Educational Tools</title>
@@ -304,8 +306,8 @@
                 // 3. Set up Bare-Mux connection with the SharedWorker
                 // bare-mux requires absolute paths starting with /
                 const workerPath = basePath + 'uv/bare-mux-worker.js';
-                // Use Epoxy transport (WebSocket-based) for better performance on heavy sites like YouTube
-                const transportPath = 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport/dist/index.mjs';
+                // Use CDN for bare-as-module3 transport (GitHub Pages compatible)
+                const transportPath = 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-as-module3@2/dist/index.mjs';
 
                 console.log('📍 Base path:', basePath);
                 console.log('📍 Worker path:', workerPath);
