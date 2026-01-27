@@ -40,12 +40,27 @@ async function handleRequest(event) {
     const isRouted = scramjet.route(event);
     console.log(`SW: 🤖 Routing decision: ${isRouted ? 'PROXY' : 'NETWORK'} for ${url}`);
 
-    if (isRouted) {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
+
+    // Explicit debug of routing logic
+    const manualMatch = path.startsWith(prefix);
+    console.log(`SW: 🧐 Routing Check:`);
+    console.log(`    Prefix:  '${prefix}'`);
+    console.log(`    Path:    '${path}'`);
+    console.log(`    Match?:  ${manualMatch}`);
+    console.log(`    Scramjet.route(): ${isRouted}`);
+
+    if (isRouted || manualMatch) {
+        if (!isRouted && manualMatch) {
+            console.warn("SW: ⚠️ Scramjet.route() returned false but manual check passed! Forcing proxy.");
+        }
         try {
             response = await scramjet.fetch(event);
             console.log(`SW: ✅ Proxied response for ${url}`);
         } catch (err) {
             console.error(`SW: ❌ Proxy fetch failed for ${url}:`, err);
+            // Fallback to fetch to see the 404 from server, or maybe return a custom error page
             response = await fetch(event.request);
         }
     } else {
