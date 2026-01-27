@@ -44,7 +44,7 @@ if (scramjetBundle) {
     const { ScramjetServiceWorker } = scramjetBundle;
     scramjet = new ScramjetServiceWorker({
         prefix: prefix,
-        wisp: (self.location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/",
+        wisp: (self.location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/",
         transport: {
             path: new URL("./lib/libcurl/index.mjs", baseURL).href,
         },

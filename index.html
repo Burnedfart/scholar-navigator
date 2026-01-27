@@ -447,7 +447,7 @@
                         type: 'config',
                         config: {
                             prefix: window.SCRAMJET_PREFIX,
-                            wisp: (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/",
+                            wisp: (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/",
                             transport: {
                                 path: new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href,
                             },
@@ -465,7 +465,7 @@
                 const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", window.APP_BASE_URL).href;
                 window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
 
-                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
+                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/";
                 console.log('🔌 [MAIN] Wisp URL:', wispUrl);
 
                 // Set Transport

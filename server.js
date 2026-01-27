@@ -7,15 +7,10 @@ import express from "express";
 // Get paths for serving static files
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-// Paths to node_modules packages
-const scramjetPath = path.join(__dirname, "node_modules/@mercuryworkshop/scramjet/dist");
-const libcurlPath = path.join(__dirname, "node_modules/@mercuryworkshop/libcurl-transport");
-const baremuxPath = path.join(__dirname, "node_modules/@mercuryworkshop/bare-mux/dist");
-
 const app = express();
 
 // WISP Configuration
-logging.set_level(logging.NONE);
+logging.set_level(logging.DEBUG);
 Object.assign(wisp.options, {
     allow_udp_streams: false,
     hostname_blacklist: [],
@@ -39,13 +34,29 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+
     next();
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        wisp: 'active',
+        uptime: process.uptime()
+    });
 });
 
 // Serve static files from root
 app.use(express.static(__dirname, {
     setHeaders: (res, path) => {
-        if (path.endsWith('.js') || path.endsWith('.wasm')) {
+        if (path.endsWith('.js') || path.endsWith('.wasm') || path.endsWith('.mjs')) {
             res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         }
     }
@@ -69,7 +80,7 @@ server.on("request", (req, res) => {
 // Handle WebSocket upgrade for WISP
 server.on("upgrade", (req, socket, head) => {
     if (req.url.endsWith("/wisp/")) {
-        console.log("📡 WISP WebSocket connection established");
+        console.log("📡 WISP WebSocket connection established from:", req.headers.origin);
         wisp.routeRequest(req, socket, head);
     } else {
         socket.end();
@@ -97,6 +108,7 @@ server.listen(PORT, HOST, () => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log(`📡 HTTP Server: http://localhost:${PORT}`);
     console.log(`🔌 WISP Endpoint: ws://localhost:${PORT}/wisp/`);
+    console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("\nServing static files:");
     console.log(`  📂 Root: ${__dirname}`);
