@@ -1,6 +1,6 @@
-importScripts("https://my-site.boxathome.net/scram/scramjet.codecs.js");
-importScripts("https://my-site.boxathome.net/scram/scramjet.bundle.js");
-importScripts("https://my-site.boxathome.net/scram/scramjet.worker.js");
+importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.codecs.js");
+importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.bundle.js");
+importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.wasm.js");
 
 const scramjet = new ScramjetServiceWorker();
 

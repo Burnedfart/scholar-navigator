@@ -15,7 +15,7 @@ const baremuxPath = path.join(__dirname, "node_modules/@mercuryworkshop/bare-mux
 const app = express();
 
 // WISP Configuration
-logging.set_level(logging.NONE); // Disable verbose logging
+logging.set_level(logging.NONE);
 Object.assign(wisp.options, {
     allow_udp_streams: false,
     hostname_blacklist: [],
