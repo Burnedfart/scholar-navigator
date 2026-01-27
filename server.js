@@ -215,13 +215,13 @@ app.use(errorHandler.middleware);
 if (require.main === module) {
     server.listen(PORT, () => {
         console.log('╔════════════════════════════════════════════════════════════╗');
-        console.log('║          ULTRAVIOLET PROXY SERVER                          ║');
+        console.log('║          SCRAMJET PROXY SERVER                             ║');
         console.log('╠════════════════════════════════════════════════════════════╣');
         console.log(`║  Server running at: http://localhost:${PORT}                  ║`);
         console.log('║                                                            ║');
         console.log('║  Features:                                                 ║');
         console.log('║  • Bare Server at /bare/                                   ║');
-        console.log('║  • Ultraviolet client at /uv/                              ║');
+        console.log('║  • Scramjet client at /service/                            ║');
         console.log('║  • WebSocket support for YouTube/Discord                   ║');
         console.log('║  • Full site compatibility                                 ║');
         console.log('╚════════════════════════════════════════════════════════════╝');

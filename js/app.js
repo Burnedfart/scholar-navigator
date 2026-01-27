@@ -437,7 +437,7 @@ async function handleFormSubmit(event) {
             updateMetadata({
                 statusCode: 200,
                 domain: new URL(url).hostname,
-                contentType: 'text/html (via Ultraviolet)',
+                contentType: 'text/html (via Scramjet)',
                 contentLength: 'N/A',
                 fetchTimeMs: 0
             });
@@ -451,7 +451,7 @@ async function handleFormSubmit(event) {
             elements.errorDisplay?.classList.add('hidden');
 
             // Update source tab with info
-            state.currentContent = `<!-- Loaded via Ultraviolet Proxy -->\n<!-- URL: ${url} -->\n<!-- Proxied URL: ${encodedUrl} -->`;
+            state.currentContent = `<!-- Loaded via Scramjet Proxy -->\n<!-- URL: ${url} -->\n<!-- Proxied URL: ${encodedUrl} -->`;
             if (elements.sourceCode) {
                 elements.sourceCode.textContent = state.currentContent;
             }
