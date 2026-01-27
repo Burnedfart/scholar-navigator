@@ -423,48 +423,59 @@ async function handleFormSubmit(event) {
     setLoading(true);
 
     try {
-        // First, get the encoded URL for display (educational)
-        const encodeResult = await encodeUrl(url);
-        updateEncodingDisplay(url, encodeResult.encoded);
+        // Use Scramjet Controller to create frame and navigate
+        if (window.scramjet) {
+            // Hide existing iframe/content
+            if (elements.contentFrame) {
+                elements.contentFrame.style.display = 'none';
+            }
 
-        // Check if Scramjet is available
-        if (typeof __scramjet$config !== 'undefined') {
-            // Use Scramjet for full site support
-            // For xor codec: __scramjet$config.codec.encode(url)
-            const encodedUrl = __scramjet$config.prefix + __scramjet$config.codec.encode(url);
+            // Remove any existing scramjet frame
+            const existingFrame = document.getElementById('sj-frame');
+            if (existingFrame) {
+                existingFrame.remove();
+            }
 
             // Update metadata with basic info
             updateMetadata({
                 statusCode: 200,
                 domain: new URL(url).hostname,
-                contentType: 'text/html (via Scramjet)',
+                contentType: 'text/html (via Scramjet + WISP)',
                 contentLength: 'N/A',
                 fetchTimeMs: 0
             });
 
-            // Navigate the iframe to the UV-proxied URL
-            elements.contentFrame.src = encodedUrl;
+            // Create Scramjet frame and navigate
+            const frame = window.scramjet.createFrame();
+            frame.frame.id = 'sj-frame';
+            frame.frame.style.cssText = 'width: 100%; height: 100%; border: none;';
+
+            // Append to rendered tab
+            elements.renderedTab.appendChild(frame.frame);
+
+            // Navigate to URL
+            frame.go(url);
 
             // Show the rendered content
             elements.emptyState?.classList.add('hidden');
             elements.renderedTab?.classList.remove('hidden');
-            elements.errorDisplay?.classList.add('hidden');
+            elements.errorDisplay?.classList.remove('visible');
 
             // Update source tab with info
-            state.currentContent = `<!-- Loaded via Scramjet Proxy -->\n<!-- URL: ${url} -->\n<!-- Proxied URL: ${encodedUrl} -->`;
+            state.currentContent = `<!-- Loaded via Scramjet Proxy + WISP -->
+<!-- URL: ${url} -->
+<!-- Transport: libcurl over WISP -->
+<!-- Backend: ${window.bareMuxConnection ? 'Connected' : 'Disconnected'} -->`;
+
             if (elements.sourceCode) {
                 elements.sourceCode.textContent = state.currentContent;
             }
-        } else {
-            // Fallback to old proxy method for simpler sites
-            const proxyResult = await fetchThroughProxy(url);
 
-            if (proxyResult.success) {
-                updateMetadata(proxyResult.metadata);
-                displayContent(proxyResult.content);
-            } else {
-                displayError(proxyResult.error);
-            }
+            // Update encoding display
+            updateEncodingDisplay(url, frame.frame.src);
+
+        } else {
+            throw new Error('Scramjet not initialized. Please refresh the page.');
         }
 
     } catch (error) {

@@ -275,14 +275,14 @@
         </footer>
     </div>
 
-    <!-- Scramjet Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.codecs.js"></script>
-    <script src="js/scramjet.config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.bundle.js"></script>
-    <!-- Note: scramjet.client.js is NOT loaded here - it's injected by the SW into proxied pages -->
+    <!-- Scramjet Bundle (from server via node_modules) -->
+    <script src="/scram/scramjet.codecs.js"></script>
+    <script src="/scram/scramjet.bundle.js"></script>
+    <!-- BareMux (from server via node_modules) -->
+    <script src="/baremux/index.js"></script>
 
     <script>
-        // Initialize Scramjet Proxy
+        // Initialize Scramjet Proxy with WISP
         async function initializeProxy() {
             if (!('serviceWorker' in navigator)) {
                 console.error('❌ Service Workers not supported');
@@ -290,34 +290,41 @@
             }
 
             try {
-                // 1. Unregister existing service workers (crucial for migration)
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (const registration of registrations) {
-                    await registration.unregister();
-                    console.log('🧹 Unregistered old service worker');
-                }
-
-                // 2. Register the Scramjet service worker
-                // Ensure scope is correct for the prefix defined in config
-                const reg = await navigator.serviceWorker.register('./sw.js', {
+                // 1. Register the Scramjet service worker
+                await navigator.serviceWorker.register('./sw.js', {
                     scope: './',
                     updateViaCache: 'none'
                 });
                 console.log('✅ Scramjet Service Worker registered');
 
-                // 3. Wait for it directly
+                // 2. Wait for service worker to be ready
                 await navigator.serviceWorker.ready;
                 console.log('✅ Service Worker is ready');
 
-                if (navigator.serviceWorker.controller) {
-                    console.log('🚀 Scramjet is controlling the page');
-                } else {
-                    // Start BareMux if needed, but Scramjet usually handles this via config 'bare'
-                    console.log('⚠️ Reload for controller to take effect');
-                }
+                // 3. Initialize Scramjet Controller
+                const { ScramjetController } = $scramjetLoadController();
 
-                // Scramjet will connect directly to the Bare server using the config
-                console.log('✅ Scramjet configured with direct Bare connection');
+                window.scramjet = new ScramjetController({
+                    prefix: '/service/',
+                    codec: 'xor'
+                });
+
+                await window.scramjet.init();
+                console.log('✅ Scramjet Controller initialized');
+
+                // 4. Setup BareMux connection with libcurl transport over WISP
+                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") +
+                    "://my-site.boxathome.net/wisp/";
+
+                window.bareMuxConnection = new BareMux.BareMuxConnection("/baremux/worker.js");
+
+                // Set libcurl transport with WISP endpoint
+                await window.bareMuxConnection.setTransport("/libcurl/index.mjs", [
+                    { websocket: wispUrl }
+                ]);
+
+                console.log('✅ BareMux configured with libcurl transport');
+                console.log('🔌 WISP endpoint:', wispUrl);
 
             } catch (err) {
                 console.error('❌ Proxy Setup failed:', err);
