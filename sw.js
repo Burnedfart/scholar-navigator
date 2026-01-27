@@ -1,5 +1,5 @@
-importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.codecs.js");
-importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.bundle.js");
+importScripts("https://cdn.jsdelivr.net/gh/MercuryWorkshop/scramjet@master/dist/scramjet.codecs.js");
+importScripts("https://cdn.jsdelivr.net/gh/MercuryWorkshop/scramjet@master/dist/scramjet.bundle.js");
 
 const scramjet = new ScramjetServiceWorker();
 
