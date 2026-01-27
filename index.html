@@ -37,23 +37,46 @@
 
                     // 4. Load Core Libraries after isolation/SW is ready
                     console.log('📦 [INIT] Loading core libraries...');
-                    const loadScript = (src) => new Promise((resolve, reject) => {
+                    const loadScript = (src, fallbackSrc) => new Promise((resolve, reject) => {
                         const s = document.createElement('script');
                         s.src = src;
                         s.onload = () => {
                             console.log(`✅ [INIT] Loaded: ${src}`);
-                            resolve();
+                            resolve(true); // Success
                         };
-                        s.onerror = (e) => {
-                            console.error(`❌ [INIT] Failed to load: ${src}`, e);
-                            reject(e);
+                        s.onerror = async (e) => {
+                            console.warn(`⚠️ [INIT] Failed to load local: ${src}`, e);
+                            if (fallbackSrc) {
+                                console.log(`🔄 [INIT] Attempting fallback: ${fallbackSrc}`);
+                                try {
+                                    await loadScript(fallbackSrc, null);
+                                    resolve(true);
+                                } catch (fallbackErr) {
+                                    console.error(`❌ [INIT] Fallback failed: ${fallbackSrc}`, fallbackErr);
+                                    reject(fallbackErr);
+                                }
+                            } else {
+                                reject(e);
+                            }
                         };
                         document.head.appendChild(s);
                     });
 
+                    // CDN Fallbacks for resiliency
+                    const bareMuxPath = new URL("./lib/baremux/index.js", window.APP_BASE_URL).href;
+                    // BareMux CDN: unpkg or jsdelivr
+                    const bareMuxCDN = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.7/dist/index.js";
+
+                    const scramjetPath = new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href;
+                    // Scramjet CDN (using GH release via jsDelivr for specific alpha version if possible, or direct GH raw)
+                    // Note: Raw git files are not suitable for production, using a specific release CDN if available.
+                    // Since specific alpha package might not be on NPM, we try to load it. 
+                    // If the user insists "it is committed", the local path SHOULD work.
+                    // We'll skip a complex CDN for scramjet for now to avoid version mismatch, but keep the robust error handler.
+
                     return Promise.all([
-                        loadScript(new URL("./lib/baremux/index.js", window.APP_BASE_URL).href),
-                        loadScript(new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href)
+                        loadScript(bareMuxPath, bareMuxCDN),
+                        loadScript(scramjetPath, null)
                     ]);
                 })
                 .then(() => {
@@ -358,8 +381,41 @@
             }
 
             if (!scramjetBundle) {
-                console.error('❌ [MAIN] Scramjet bundle not found! Neither $scramjetLoadController nor __scramjet$bundle are available.');
-                return;
+                console.warn('⚠️ [MAIN] Scramjet bundle not found! Attempting fallback dynamic load...');
+                // Attempt additional fallbacks if initial load failed
+                const scramjetCandidates = [
+                    new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
+                    new URL("./lib/scramjet/scramjet.bundle.js", window.APP_BASE_URL).href,
+                    new URL("/lib/scramjet/scramjet.all.js", window.location.origin).href,
+                    'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.all.js'
+                ];
+                for (const src of scramjetCandidates) {
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const s = document.createElement('script');
+                            s.src = src;
+                            s.onload = resolve;
+                            s.onerror = reject;
+                            document.head.appendChild(s);
+                        });
+                        console.log('✅ [MAIN] Fallback loaded:', src);
+
+                        if (typeof window.$scramjetLoadController === 'function') {
+                            scramjetBundle = window.$scramjetLoadController();
+                        } else if (window.__scramjet$bundle) {
+                            scramjetBundle = window.__scramjet$bundle;
+                        }
+
+                        if (scramjetBundle) break;
+                    } catch (e) {
+                        console.warn('⚠️ [MAIN] Fallback candidate failed:', src, e);
+                    }
+                }
+
+                if (!scramjetBundle) {
+                    console.error('❌ [MAIN] All attempts to load Scramjet failed. Proxy will be disabled.');
+                    return;
+                }
             }
 
             const { ScramjetController } = scramjetBundle;

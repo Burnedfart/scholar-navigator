@@ -1,4 +1,14 @@
-importScripts("./lib/scramjet/scramjet.all.js");
+try {
+    try {
+    importScripts("./lib/scramjet/scramjet.all.js");
+} catch (err) {
+    // If importScripts fails the SW should degrade gracefully and continue to serve network
+    console.error('SW: ❌ Failed to import scramjet library:', err);
+}
+    console.log('SW: ✅ Scramjet script imported');
+} catch (e) {
+    console.error('SW: ❌ Failed to import Scramjet script:', e);
+}
 
 
 // Ensure immediate control
