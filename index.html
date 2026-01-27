@@ -282,6 +282,7 @@
 
     <script>
         // Initialize Scramjet Proxy with WISP
+        // Logic adapted from scramjet-demo/public/index.js
         async function initializeProxy() {
             console.log('🔧 [MAIN] Starting proxy initialization...');
 
@@ -291,57 +292,49 @@
             }
             console.log('✅ [MAIN] Service Worker API available');
 
+            const { ScramjetController } = $scramjetLoadController();
+
+            window.scramjet = new ScramjetController({
+                files: {
+                    wasm: "./lib/scramjet/scramjet.wasm.wasm",
+                    all: "./lib/scramjet/scramjet.all.js",
+                    sync: "./lib/scramjet/scramjet.sync.js",
+                },
+                // Demo doesn't use prefix in constructor, it sets it later or relies on defaults?
+                // Demo: const scramjet = new ScramjetController({ files: { ... } });
+                // But user's wiki info said prefix... let's stick to demo code exactly.
+                // Wait, demo index.js doesn't pass prefix to constructor.
+            });
+
+            await window.scramjet.init();
+            console.log('✅ [MAIN] Scramjet Controller initialized');
+
             try {
-                // 1. Initialize Scramjet Controller
-                console.log('🎮 [MAIN] Initializing Scramjet Controller...');
-
-                // Wiki says: const { ScramjetController } = $scramjetLoadController();
-                if (typeof $scramjetLoadController === 'undefined') {
-                    throw new Error('$scramjetLoadController is undefined. Scramjet script not loaded correctly?');
-                }
-                const { ScramjetController } = $scramjetLoadController();
-
-                window.scramjet = new ScramjetController({
-                    files: {
-                        wasm: "./lib/scramjet/scramjet.wasm.wasm",
-                        all: "./lib/scramjet/scramjet.all.js",
-                        sync: "./lib/scramjet/scramjet.sync.js",
-                    },
-                    prefix: '/service/',
-                });
-
-                await window.scramjet.init();
-                console.log('✅ [MAIN] Scramjet Controller initialized');
-
-                // 2. Register Service Worker
-                console.log('📝 [MAIN] Registering Service Worker...');
+                // Register Service Worker (demo uses text/javascript, we use text/javascript or module?)
+                // Demo uses: await navigator.serviceWorker.register(stockSW);
                 const registration = await navigator.serviceWorker.register('./sw.js', {
                     scope: './'
                 });
                 console.log('✅ [MAIN] Service Worker registered');
 
-                // 3. Setup BareMux connection
-                console.log('🔌 [MAIN] Setting up BareMux...');
-                // Use wss for secure, ws for insecure
-                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
-
-                // Initialize BareMux connection
+                // BareMux Connection
+                // Demo: const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
                 window.bareMuxConnection = new BareMux.BareMuxConnection("./lib/baremux/worker.js");
 
-                // Set transport
-                // Note: server.js maps /libcurl/ to the package root. dist/index.mjs is the ESM entry.
-                await window.bareMuxConnection.setTransport("./lib/libcurl/index.mjs", [{ wisp: wispUrl }]);
+                const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
+                console.log('🔌 [MAIN] Wisp URL:', wispUrl);
 
-                console.log('✅ [MAIN] BareMux configured with libcurl transport');
-                console.log('🎉 [MAIN] Proxy initialization complete!');
+                // Demo: if ((await connection.getTransport()) !== "/libcurl/index.mjs") { ... }
+                // We will just force set it.
+                await window.bareMuxConnection.setTransport("./lib/libcurl/index.mjs", [{ wisp: wispUrl }]);
+                console.log('✅ [MAIN] BareMux configured');
+                console.log('🎉 [MAIN] Proxy fully ready');
 
             } catch (err) {
-                console.error('❌ [MAIN] Proxy Setup failed:', err);
-                console.error('Error details:', err);
+                console.error('❌ [MAIN] Initialization failed:', err);
             }
         }
 
-        // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeProxy);
         } else {

@@ -16,10 +16,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mercuryworkshop/scramjet": "2.0.0-alpha",
-    "@mercuryworkshop/bare-mux": "latest",
-    "@mercuryworkshop/libcurl-transport": "latest",
-    "@mercuryworkshop/wisp-js": "latest",
+    "@mercuryworkshop/bare-mux": "^2.1.7",
+    "@mercuryworkshop/libcurl-transport": "^1.5.2",
+    "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/latest/mercuryworkshop-scramjet-2.0.0-alpha.tgz",
+    "@mercuryworkshop/wisp-js": "^0.4.1",
     "express": "^4.21.2"
   }
 }
