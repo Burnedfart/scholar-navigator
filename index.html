@@ -292,19 +292,34 @@
             }
             console.log('✅ [MAIN] Service Worker API available');
 
-            const { ScramjetController } = $scramjetLoadController();
+            // Determine the base URL of the application, ensuring a trailing slash
+            // This prevents 'new URL()' from stripping the repository name if the current URL doesn't have a slash
+            // e.g. "https://site.com/repo" -> "https://site.com/repo/"
+            let baseURL = location.href;
+            if (!baseURL.endsWith('/')) {
+                if (baseURL.split('/').pop().includes('.')) {
+                    // It's a file like index.html, strip it
+                    baseURL = baseURL.substring(0, baseURL.lastIndexOf('/') + 1);
+                } else {
+                    // It's a directory without slash, add it
+                    baseURL += '/'; // This might be risky if it's not a dir, but for GH pages repo root it is.
+                    // Safer: just use the folder containing index.html
+                    // actually, safely generic:
+                    baseURL = new URL("./", location.href).href;
+                }
+            }
+            console.log('🔗 [MAIN] Base URL:', baseURL);
 
-            // Calculate the prefix based on the current location
-            // This ensures it works on both localhost and GitHub Pages (e.g. /repo-name/scramjet/)
-            const prefix = new URL("scramjet/", location.href).pathname;
+            // Calculate the prefix relative to the Base URL
+            const prefix = new URL("scramjet/", baseURL).pathname;
             console.log('🔧 [MAIN] Computed Scramjet prefix:', prefix);
 
             window.scramjet = new ScramjetController({
                 prefix: prefix,
                 files: {
-                    wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", location.href).href,
-                    all: new URL("./lib/scramjet/scramjet.all.js", location.href).href,
-                    sync: new URL("./lib/scramjet/scramjet.sync.js", location.href).href,
+                    wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", baseURL).href,
+                    all: new URL("./lib/scramjet/scramjet.all.js", baseURL).href,
+                    sync: new URL("./lib/scramjet/scramjet.sync.js", baseURL).href,
                 },
             });
 
@@ -317,6 +332,28 @@
                     scope: './'
                 });
                 console.log('✅ [MAIN] Service Worker registered');
+
+                // Wait for SW to be active
+                await navigator.serviceWorker.ready;
+
+                // Send configuration to Service Worker
+                // This is critical because SW needs to know the prefix to route requests
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'config',
+                        config: {
+                            prefix: prefix,
+                            files: {
+                                wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", location.href).href,
+                                all: new URL("./lib/scramjet/scramjet.all.js", location.href).href,
+                                sync: new URL("./lib/scramjet/scramjet.sync.js", location.href).href,
+                            }
+                        }
+                    });
+                    console.log('📨 [MAIN] Configuration sent to Service Worker');
+                } else {
+                    console.warn('⚠️ [MAIN] Service Worker controller not found immediately');
+                }
 
                 // BareMux Connection
                 const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", location.href).href;

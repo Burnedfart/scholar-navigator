@@ -14,3 +14,15 @@ async function handleRequest(event) {
 self.addEventListener("fetch", (event) => {
     event.respondWith(handleRequest(event));
 });
+
+self.addEventListener("message", async (event) => {
+    if (event.data && event.data.type === 'config') {
+        console.log('SW: Received config', event.data.config);
+        try {
+            await scramjet.configure(event.data.config);
+            console.log('SW: Scramjet configured successfully');
+        } catch (err) {
+            console.error('SW: Configuration failed', err);
+        }
+    }
+});
