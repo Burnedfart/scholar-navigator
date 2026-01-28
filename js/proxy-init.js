@@ -34,7 +34,8 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
         console.log('✅ [SW] Ready and Active');
 
         // 3. Handle Cross-Origin Isolation
-        if (!window.crossOriginIsolated && window.isSecureContext) {
+        // Skip reload in iframe - isolation impossible with COOP: unsafe-none
+        if (!window.crossOriginIsolated && window.isSecureContext && !isInIframe) {
             if (!sessionStorage.getItem('coi_reloaded')) {
                 sessionStorage.setItem('coi_reloaded', 'true');
                 console.log('🔄 [PROXY] Reloading NOW for Isolation headers...');
