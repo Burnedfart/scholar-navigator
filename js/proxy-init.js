@@ -171,24 +171,7 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             console.log('📨 [PROXY] Sent init_complete signal to Service Worker');
         }
 
-        // 7. Clear old BareMux IndexedDB (fix schema conflicts)
-        try {
-            const dbDeleteRequest = indexedDB.deleteDatabase('BareMux');
-            await new Promise((resolve) => {
-                dbDeleteRequest.onsuccess = () => {
-                    console.log('🗑️ [PROXY] Cleared old BareMux database');
-                    resolve();
-                };
-                dbDeleteRequest.onerror = () => {
-                    console.warn('⚠️ [PROXY] Could not delete old BareMux database');
-                    resolve(); // Continue anyway
-                };
-            });
-        } catch (dbErr) {
-            console.warn('⚠️ [PROXY] IndexedDB deletion failed:', dbErr);
-        }
-
-        // 8. Initialize BareMux Transport
+        // 7. Initialize BareMux Transport
         const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", window.APP_BASE_URL).href;
         window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
         const transportPath = new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href;
