@@ -219,14 +219,19 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             console.log('📨 [PROXY] Sent init_complete signal to Service Worker');
         }
 
-        // 7. Initialize BareMux Transport
-        const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", window.APP_BASE_URL).href;
-        window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
-        const transportPath = new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href;
+        // 7. Initialize BareMux Transport (only if cross-origin isolated)
+        if (window.crossOriginIsolated) {
+            const bareMuxWorkerPath = new URL("./lib/baremux/worker.js", window.APP_BASE_URL).href;
+            window.bareMuxConnection = new BareMux.BareMuxConnection(bareMuxWorkerPath);
+            const transportPath = new URL("./lib/libcurl/index.mjs", window.APP_BASE_URL).href;
 
-        // Perform connection
-        await window.bareMuxConnection.setTransport(transportPath, [{ websocket: wispUrl }]);
-        console.log('✅ [PROXY] BareMux transport connected');
+            // Perform connection
+            await window.bareMuxConnection.setTransport(transportPath, [{ websocket: wispUrl }]);
+            console.log('✅ [PROXY] BareMux transport connected');
+        } else {
+            console.log('⚠️ [PROXY] Skipping BareMux (requires cross-origin isolation)');
+            console.log('ℹ️ [PROXY] Using Scramjet direct WISP transport only');
+        }
 
         window.ProxyService.initialized = true;
         resolve(true);
