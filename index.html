@@ -371,65 +371,6 @@
 
     <script>
         // ============================================================================
-        // DIAGNOSTIC: IndexedDB Availability Test (for Chromebook debugging)
-        // ============================================================================
-        (async function diagnoseIndexedDB() {
-            console.log('🔍 [DIAGNOSTIC] Starting IndexedDB availability test...');
-            const results = {};
-
-            // Test 1: Basic IndexedDB availability
-            results.indexedDBExists = 'indexedDB' in window;
-
-            // Test 2: Try to open a database
-            try {
-                const request = indexedDB.open('diagnostic-test', 1);
-                await new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        console.log('✅ [DIAGNOSTIC] IndexedDB.open() succeeded');
-                        resolve();
-                    };
-                    request.onerror = (e) => {
-                        console.error('❌ [DIAGNOSTIC] IndexedDB.open() failed:', e);
-                        reject(e);
-                    };
-                    request.onblocked = () => {
-                        console.warn('⚠️ [DIAGNOSTIC] IndexedDB.open() blocked');
-                    };
-                });
-                results.canOpenDB = true;
-
-                // Try to delete the test database
-                indexedDB.deleteDatabase('diagnostic-test');
-            } catch (error) {
-                results.canOpenDB = false;
-                results.openError = error.message || error.toString();
-                console.error('❌ [DIAGNOSTIC] IndexedDB test failed:', error);
-            }
-
-            // Test 3: Context information  
-            results.isSecureContext = window.isSecureContext;
-            results.crossOriginIsolated = window.crossOriginIsolated;
-            results.origin = location.origin;
-            results.protocol = location.protocol;
-
-            // Test 4: Service Worker status
-            results.swRegistered = 'serviceWorker' in navigator;
-
-            console.log('📊 [DIAGNOSTIC] IndexedDB Test Results:');
-            console.table(results);
-
-            if (!results.canOpenDB) {
-                console.error('🚨 [DIAGNOSTIC] IndexedDB is NOT accessible - Scramjet will fail!');
-                console.log('💡 [DIAGNOSTIC] This Chromebook may have IndexedDB blocked by policy');
-                console.log('💡 [DIAGNOSTIC] Ultraviolet worked because it uses localStorage, Scramjet requires IndexedDB');
-            } else {
-                console.log('✅ [DIAGNOSTIC] IndexedDB is accessible - Scramjet should work');
-            }
-
-            return results;
-        })();
-
-        // ============================================================================
         // Initialize Scramjet Proxy with WISP
         // Logic adapted from scramjet-demo/public/index.js
         // ============================================================================
