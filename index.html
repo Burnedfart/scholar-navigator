@@ -102,6 +102,17 @@
             </div>
         </div>
 
+        <!-- Network Warning Banner (hidden by default) -->
+        <div id="network-warning-banner" class="network-warning-banner hidden">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+                <div class="warning-title">Network Restriction Detected</div>
+                <div class="warning-message">WebSocket connections appear to be blocked. The proxy may not work properly
+                    on this network.</div>
+            </div>
+            <button class="warning-close" id="warning-close-btn" aria-label="Close warning">✕</button>
+        </div>
+
         <!-- Viewports Container -->
         <div class="viewports-container" id="viewports-container">
             <!-- Iframes will be injected here -->
@@ -109,6 +120,10 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Error handler MUST load first to catch initialization issues -->
+    <script src="js/error-handler.js"></script>
+    <!-- WebSocket health checker for diagnostics -->
+    <script src="js/wisp-health.js"></script>
     <script src="js/proxy-init.js"></script>
     <script src="js/browser.js"></script>
 </body>
