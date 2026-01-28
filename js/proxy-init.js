@@ -84,6 +84,20 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
         const { ScramjetController } = scramjetBundle;
         const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/";
 
+        // CRITICAL: Force delete $scramjet database to ensure clean initialization
+        console.log('🗑️ [PROXY] Deleting existing $scramjet database...');
+        await new Promise((resolve) => {
+            const deleteReq = indexedDB.deleteDatabase('$scramjet');
+            deleteReq.onsuccess = () => {
+                console.log('✅ [PROXY] $scramjet database deleted');
+                resolve();
+            };
+            deleteReq.onerror = deleteReq.onblocked = () => {
+                console.log('⚠️ [PROXY] Could not delete $scramjet database, continuing anyway');
+                resolve();
+            };
+        });
+
         window.scramjet = new ScramjetController({
             prefix: window.SCRAMJET_PREFIX,
             wisp: wispUrl,
