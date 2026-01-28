@@ -44,7 +44,7 @@ if (scramjetBundle) {
 
 // Cache name for static resources
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v4'; // Bumped for COEP relaxation
+const CACHE_NAME = 'scramjet-proxy-cache-v5'; // Bumped for App COEP fix
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -201,15 +201,19 @@ async function handleRequest(event) {
 
         if (isNavigationRequest) {
             const newHeaders = new Headers(response.headers);
-            newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
 
             // Detect iframe context
             const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
             const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
 
             if (isIframe) {
-                newHeaders.set("Cross-Origin-Opener-Policy", "unsafe-none");
+                // IFRAME MODE: Relax ALL isolation headers for the main app too
+                newHeaders.delete("Cross-Origin-Embedder-Policy");
+                newHeaders.delete("Cross-Origin-Opener-Policy");
+                console.log('SW: 🖼️ Iframe detected (App) - Removed COEP/COOP');
             } else {
+                // STANDALONE MODE: Enforce isolation
+                newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
                 newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
             }
 
