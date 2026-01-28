@@ -149,20 +149,12 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             }
         }
 
-        // 6. Configure Service Worker
+        // CRITICAL: Signal to Service Worker that database is ready
         if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({
-                type: 'config',
-                config: {
-                    prefix: window.SCRAMJET_PREFIX,
-                    wisp: wispUrl,
-                    files: {
-                        wasm: new URL("./lib/scramjet/scramjet.wasm.wasm", window.APP_BASE_URL).href,
-                        all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
-                        sync: new URL("./lib/scramjet/scramjet.sync.js", window.APP_BASE_URL).href,
-                    }
-                }
+                type: 'init_complete'
             });
+            console.log('📨 [PROXY] Sent init_complete signal to Service Worker');
         }
 
         // 7. Clear old BareMux IndexedDB (fix schema conflicts)

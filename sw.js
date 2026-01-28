@@ -72,8 +72,8 @@ async function ensureConfigLoaded() {
     }
 }
 
-// Load config immediately after initialization
-ensureConfigLoaded();
+// DON'T load config immediately - wait for main page to initialize database first
+// ensureConfigLoaded(); // REMOVED - causes race condition
 
 async function handleRequest(event) {
     const url = event.request.url;
@@ -196,9 +196,13 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(handleRequest(event));
 });
 
-// Listen for config updates from main page
-self.addEventListener('message', (event) => {
-    if (event.data?.type === 'invalidate_config') {
+// Listen for messages from main page
+self.addEventListener('message', async (event) => {
+    if (event.data?.type === 'init_complete') {
+        // Main page has initialized Scramjet database, now safe to load config
+        console.log('SW: 📨 Received init_complete signal from main page');
+        await ensureConfigLoaded();
+    } else if (event.data?.type === 'invalidate_config') {
         scramjetConfigLoaded = false;
         console.log('SW: 🔄 Config invalidated, will reload on next request');
     }
