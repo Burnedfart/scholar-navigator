@@ -43,7 +43,7 @@ if (scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v2'; // Bumped for iframe fix
+const CACHE_NAME = 'scramjet-proxy-cache-v3'; // Bumped for CSP stripping fix
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -57,6 +57,25 @@ const STATIC_CACHE_PATTERNS = [
 // Check if URL matches static resource patterns
 function isStaticResource(url) {
     return STATIC_CACHE_PATTERNS.some(pattern => pattern.test(url));
+}
+
+// Strip headers that prevent embedding and restrict content
+// Critical for sites like Coolmathgames to work in iframe
+function stripRestrictiveHeaders(headers) {
+    const newHeaders = new Headers(headers);
+
+    // CSP headers - these are the main culprits for blocking content
+    newHeaders.delete('Content-Security-Policy');
+    newHeaders.delete('Content-Security-Policy-Report-Only');
+
+    // Frame-related headers - prevent iframe embedding
+    newHeaders.delete('X-Frame-Options');
+    newHeaders.delete('Frame-Options');
+
+    // Additional restrictive headers
+    newHeaders.delete('X-Content-Type-Options'); // Can interfere with resource loading
+
+    return newHeaders;
 }
 
 // PERFORMANCE: Load config ONCE at startup, not on every request
@@ -116,42 +135,42 @@ async function handleRequest(event) {
 
             const response = await scramjet.fetch(event);
 
+            // CRITICAL: Detect iframe context to determine header strategy
+            const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
+            const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
+
+            // Strip restrictive headers from proxied content
+            // This is ESSENTIAL for sites like Coolmathgames to work in iframe mode
+            let newHeaders = stripRestrictiveHeaders(response.headers);
+
             // PERFORMANCE: Only inject COOP/COEP on navigation requests
             // Scramjet handles headers for proxied content, we only need them for isolation
             if (isNavigationRequest) {
-                const newHeaders = new Headers(response.headers);
                 newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
-
-                // Detect iframe context: check if being embedded via Sec-Fetch-Dest header
-                const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
-                const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
 
                 if (isIframe) {
                     // Allow iframe embedding on cross-origin sites like sites.google.com
                     newHeaders.set("Cross-Origin-Opener-Policy", "unsafe-none");
-                    console.log('SW: 🖼️ Iframe context detected, using relaxed COOP');
+                    console.log('SW: 🖼️ Iframe context detected, stripped CSP headers');
                 } else {
                     // Standalone mode: stronger isolation
                     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
                 }
-
-                const modifiedResponse = new Response(response.body, {
-                    status: response.status === 0 ? 200 : response.status,
-                    statusText: response.statusText,
-                    headers: newHeaders,
-                });
-
-                // Cache static resources
-                if (isStaticResource(url) && response.ok) {
-                    const cache = await caches.open(CACHE_NAME);
-                    cache.put(event.request, modifiedResponse.clone());
-                }
-
-                return modifiedResponse;
             }
 
-            // For non-navigation proxied requests, return as-is
-            return response;
+            const modifiedResponse = new Response(response.body, {
+                status: response.status === 0 ? 200 : response.status,
+                statusText: response.statusText,
+                headers: newHeaders,
+            });
+
+            // Cache static resources
+            if (isStaticResource(url) && response.ok) {
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(event.request, modifiedResponse.clone());
+            }
+
+            return modifiedResponse;
         }
 
         // Standard network request for app files
