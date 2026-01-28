@@ -254,10 +254,9 @@ class Browser {
 
         // Default Apps
         const apps = [
-            { name: 'Google', url: 'https://google.com', icon: 'G' },
-            { name: 'Discord', url: 'https://discord.com', icon: 'D' },
-            { name: 'YouTube', url: 'https://youtube.com', icon: 'Y' },
-            { name: 'GitHub', url: 'https://github.com', icon: 'gh' }
+            { name: 'Bing', url: 'https://bing.com', icon: 'B' },
+            { name: 'Coolmath Games', url: 'https://coolmathgames.com', icon: 'CM' },
+            { name: 'GitHub', url: 'https://github.com', icon: 'GH' }
         ];
 
         // Custom Apps from LocalStorage
