@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-    <!-- Cross-Origin Isolation for High Performance Proxying -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Proxy</title>
@@ -97,17 +96,16 @@
             </div>
 
             <div class="window-controls">
-                <!-- Fallback menu or status could go here -->
                 <div class="status-indicator" id="proxy-status" title="Proxy Status"></div>
             </div>
         </div>
 
-        <!-- Network Warning Banner (hidden by default) -->
+        <!-- Network Warning Banner -->
         <div id="network-warning-banner" class="network-warning-banner hidden">
             <div class="warning-icon">⚠️</div>
             <div class="warning-content">
                 <div class="warning-title">Network Restriction Detected</div>
-                <div class="warning-message">WebSocket connections appear to be blocked. The proxy may not work properly
+                <div class="warning-message">WebSocket connections might be blocked. The proxy may not work properly
                     on this network.</div>
             </div>
             <button class="warning-close" id="warning-close-btn" aria-label="Close warning">✕</button>
@@ -119,12 +117,8 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <!-- Error handler MUST load first to catch initialization issues -->
     <script src="js/error-handler.js"></script>
-    <!-- Storage health check runs before proxy initialization -->
     <script src="js/storage-health.js"></script>
-    <!-- WebSocket health checker for diagnostics -->
     <script src="js/wisp-health.js"></script>
     <script src="js/proxy-init.js"></script>
     <script src="js/browser.js"></script>

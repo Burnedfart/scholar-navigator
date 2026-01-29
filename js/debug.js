@@ -315,8 +315,8 @@
 
             if (window.WispHealthChecker) {
                 // Get URLs from ProxyService if possible
-                const wispUrl = window.ProxyService?.wispUrl || (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/wisp/';
-                const httpUrl = window.location.origin + '/api/health';
+                const wispUrl = window.ProxyService?.wispUrl || (location.protocol === "https:" ? "wss" : "ws") + "://navigator.scholarnavigator.workers.dev/wisp/";
+                const httpUrl = "https://navigator.scholarnavigator.workers.dev/api/health";
 
                 console.log('🧪 Starting manual diagnostics...');
                 const results = await window.WispHealthChecker.diagnose(wispUrl, httpUrl);
