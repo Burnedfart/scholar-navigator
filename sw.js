@@ -14,7 +14,7 @@ try {
 
 // Ensure immediate control
 self.addEventListener('install', (event) => {
-    console.log('SW: 📥 Installing version 9 (Chrome compatibility fix)...');
+    console.log('SW: 📥 Installing version 10 (WASM rewriter fix)...');
     self.skipWaiting();
 });
 
@@ -54,7 +54,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v9'; // Chrome compatibility fix
+const CACHE_NAME = 'scramjet-proxy-cache-v10'; // WASM rewriter fix
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -157,17 +157,20 @@ async function handleRequest(event) {
             let newHeaders = stripRestrictiveHeaders(response.headers);
 
             // PERFORMANCE: Only inject COOP/COEP on navigation requests
-            // BUT: Don't enforce strict isolation on proxied sites - Chrome blocks resources
+            // BUT: CRITICAL: Scramjet WASM needs COEP to load in workers
             if (isNavigationRequest) {
-                // For proxied content, we DON'T want COEP: require-corp
-                // because it breaks resource loading in Chrome (blocks scripts, images, etc.)
-                // The proxied site's resources won't have CORP headers
-
-                // We only need COEP on the main app shell, which is NOT proxied
-                // Proxied content should have NO isolation headers for maximum compatibility
-                newHeaders.delete("Cross-Origin-Embedder-Policy");
-                newHeaders.delete("Cross-Origin-Opener-Policy");
-                console.log('SW: 🌐 Proxied content - Removed COEP/COOP for compatibility');
+                if (isIframe) {
+                    // IFRAME MODE: Remove COEP/COOP (can't achieve isolation in embeds)
+                    newHeaders.delete("Cross-Origin-Embedder-Policy");
+                    newHeaders.delete("Cross-Origin-Opener-Policy");
+                    console.log('SW: 🖼️ Iframe - Removed COEP/COOP');
+                } else {
+                    // STANDALONE: credentialless = WASM works + resources load
+                    // This allows Scramjet's WASM rewriter to load in workers
+                    newHeaders.set("Cross-Origin-Embedder-Policy", "credentialless");
+                    newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+                    console.log('SW: 🔒 Standalone - COEP: credentialless');
+                }
             }
 
             const modifiedResponse = new Response(response.body, {
