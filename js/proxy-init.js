@@ -103,7 +103,7 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
 
         const { ScramjetController } = scramjetBundle;
 
-        const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net:3000/wisp/";
+        const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://scholarnavigator.top/wisp/";
 
         // DIAGNOSTIC: Test WebSocket connectivity before proceeding
         if (window.WispHealthChecker) {

@@ -6,7 +6,7 @@ import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import express from "express";
 
 // Load SSL certificates (certbot standard locations)
-const DOMAIN = "my-site.boxathome.net";
+const DOMAIN = "scholarnavigator.top";
 let httpsOptions;
 try {
     httpsOptions = {

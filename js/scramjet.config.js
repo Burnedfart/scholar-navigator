@@ -32,7 +32,7 @@
 
         // IMPORTANT: Direct Bare server connection (no BareMux)
         // This tells Scramjet to connect directly to the Bare server
-        bare: 'https://my-site.boxathome.net/bare/',
+        bare: 'https://scholarnavigator.top/bare/',
 
         // Use the directory where the files are hosted (CDN)
         directory: 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/',
