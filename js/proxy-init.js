@@ -317,16 +317,39 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             swController = await Promise.race([controllerReady, controllerTimeout]);
         }
 
-        if (swController) {
-            swController.postMessage({
+        // Send signal to Service Worker
+        const sendInitSignal = async () => {
+            const msg = {
                 type: 'init_complete',
                 config: scramjetConfig
-            });
-            console.log('📨 [PROXY] Sent init_complete signal with config to Service Worker');
-        } else {
-            console.warn('⚠️ [PROXY] No SW controller available, skipping init_complete signal');
-            // This is OK - SW will wait for signal, but page can still function
-        }
+            };
+
+            // 1. Try sending to current controller
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage(msg);
+                console.log('📨 [PROXY] Sent init_complete to controller');
+            }
+
+            // 2. Try sending to all active registrations (more robust)
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) {
+                    if (reg.active) {
+                        reg.active.postMessage(msg);
+                        console.log('📨 [PROXY] Sent init_complete to active registration');
+                    }
+                }
+            } catch (err) {
+                console.warn('⚠️ [PROXY] Failed to send signal to registrations:', err);
+            }
+        };
+
+        // Execute immediately and also listen for controller changes
+        await sendInitSignal();
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('🔄 [PROXY] SW controller changed, re-sending signal...');
+            sendInitSignal();
+        });
 
         // 7. Initialize BareMux Transport (only if cross-origin isolated)
         if (window.crossOriginIsolated) {

@@ -14,28 +14,14 @@ try {
 
 // Ensure immediate control
 self.addEventListener('install', (event) => {
-    console.log('SW: 📥 Installing version 13 (Config & Path fixes)...');
+    console.log('SW: 📥 Installing version 14 (Handshake fix)...');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
     console.log('SW: ⚡ Activating and claiming clients...');
-    event.waitUntil(
-        Promise.all([
-            self.clients.claim(),
-            // Clear old caches to prevent stale content issues
-            caches.keys().then(names => {
-                return Promise.all(
-                    names.map(name => {
-                        if (name !== CACHE_NAME) {
-                            console.log(`SW: 🗑️ Deleting old cache: ${name}`);
-                            return caches.delete(name);
-                        }
-                    })
-                );
-            })
-        ])
-    );
+    // Tell the active service worker to take control of the page immediately.
+    event.waitUntil(self.clients.claim());
 });
 
 let scramjet = null; // Will be created later
@@ -54,7 +40,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v13'; // Config & Path fixes
+const CACHE_NAME = 'scramjet-proxy-cache-v14'; // Handshake fix
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -113,24 +99,26 @@ async function handleRequest(event) {
     if (!scramjet || !scramjetConfigLoaded) {
         // CRITICAL: Check if this is a URL that SHOULD be proxied.
         // On GitHub Pages, proxied URLs start with our origin but contain '/service/'
-        const isProxied = url.includes('/service/http');
+        // We look for '/service/' and 'http' to be extra sure (handles encoded strings too)
+        const isProxied = url.includes('/service/') && (url.includes('http%3A') || url.includes('http:'));
         const isExternal = url.startsWith('http') && !url.startsWith(self.location.origin);
 
         if (isProxied || isExternal) {
-            console.warn(`SW: ⏳ Proxy not ready for URL: ${url}. Showing loading state...`);
+            console.warn(`SW: ⏳ Proxy not ready for URL: ${url}. showing loading state...`);
             return new Response(`
                 <html><body style="font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#111;color:#eee;text-align:center;">
-                    <h2>Initializing Proxy...</h2>
-                    <p>Establishing connection to the proxy network.</p>
+                    <div style="border:4px solid #333;border-top:4px solid #0078d4;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+                    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                    <h2 style="margin:0;">Initializing Proxy</h2>
+                    <p style="opacity:0.7;">Securing your connection...</p>
                     <script>setTimeout(() => location.reload(), 2000);</script>
                 </body></html>
             `, { status: 503, headers: { 'Content-Type': 'text/html' } });
         }
 
-        console.log(`SW: ⏩ Passing through app resource: ${url}`);
+        console.log(`SW: ⏩ Handling as app resource: ${url}`);
         return fetch(event.request);
     }
-
     try {
         // Check if this request should be proxied
         if (scramjet.route(event)) {
