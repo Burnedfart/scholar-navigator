@@ -94,6 +94,8 @@ async function ensureConfigLoaded() {
 async function handleRequest(event) {
     const url = event.request.url;
     const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document';
+    const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
+    const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
 
     // If scramjet hasn't been initialized yet, pass through all requests
     if (!scramjet || !scramjetConfigLoaded) {
@@ -124,6 +126,38 @@ async function handleRequest(event) {
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
 
+            // fetchDest and isIframe are defined above
+
+            // If it's a top-level navigation (not in an iframe), redirect back into the browser shell
+            if (isNavigationRequest && !isIframe) {
+                console.log(`SW: 🔄 Top-level proxy navigation detected, redirecting to shell: ${url}`);
+
+                let targetUrl = url;
+                try {
+                    // Extract the original target URL from the proxied URL
+                    const prefix = scramjet.config.prefix;
+                    const pathAfterPrefix = url.split(prefix)[1] || '';
+
+                    // Most Scramjet 2.0 URLs are [prefix][codec]/[encoded_url]
+                    // We try to skip the codec part (e.g. "xor/")
+                    const encodedPart = pathAfterPrefix.includes('/') ? pathAfterPrefix.split('/').slice(1).join('/') : pathAfterPrefix;
+
+                    if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
+                        targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
+                        console.log(`SW: 🔓 Decoded target URL: ${targetUrl}`);
+                    }
+                } catch (e) {
+                    console.warn('SW: ⚠️ Failed to decode URL for redirect, using proxied URL:', e);
+                }
+
+                // Redirect to the main UI with the URL as a parameter
+                // This will cause the browser to open a new native tab containing our shell
+                const shellUrl = new URL('./index.html', self.location.href);
+                shellUrl.searchParams.set('url', targetUrl);
+
+                return Response.redirect(shellUrl.href, 302);
+            }
+
             // PERFORMANCE: Use cache-first strategy for static resources
             if (isStaticResource(url)) {
                 const cache = await caches.open(CACHE_NAME);
@@ -132,10 +166,6 @@ async function handleRequest(event) {
             }
 
             const response = await scramjet.fetch(event);
-
-            // CRITICAL: Detect iframe context to determine header strategy
-            const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
-            const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
 
             // Strip restrictive headers from proxied content
             let newHeaders = stripRestrictiveHeaders(response.headers);
@@ -183,8 +213,7 @@ async function handleRequest(event) {
 
         if (isNavigationRequest) {
             const newHeaders = new Headers(response.headers);
-            const fetchDest = event.request.headers.get('Sec-Fetch-Dest');
-            const isIframe = fetchDest === 'iframe' || fetchDest === 'embed';
+            // isIframe is defined above
 
             if (isIframe) {
                 newHeaders.delete("Cross-Origin-Embedder-Policy");

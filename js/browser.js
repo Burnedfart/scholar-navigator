@@ -43,8 +43,21 @@ class Browser {
         this.checkThemeContrast();
         this.updateProxyStatus('loading');
 
-        // Create initial tab (Home)
-        this.createTab();
+        // Check for URL in query parameters (for deep linking / open-in-new-tab redirect)
+        const params = new URLSearchParams(window.location.search);
+        const urlToOpen = params.get('url');
+
+        if (urlToOpen) {
+            // Clean up the address bar
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+
+            console.log('[BROWSER] Opening external URL:', urlToOpen);
+            this.createTab(decodeURIComponent(urlToOpen));
+        } else {
+            // Create initial tab (Home)
+            this.createTab();
+        }
 
         try {
             await window.ProxyService.ready;
@@ -91,6 +104,21 @@ class Browser {
     }
 
     bindEvents() {
+        // Intercept new window requests from Scramjet
+        window.addEventListener('message', (e) => {
+            if (!e.data) return;
+
+            // Scramjet 2.x "open" message format
+            // Often sent as { type: 'scramjet:open', url: '...' } or nested
+            if (e.data.type === 'scramjet:open' || (e.data.scramjet && e.data.scramjet.type === 'open')) {
+                const url = e.data.url || (e.data.scramjet && e.data.scramjet.url);
+                if (url) {
+                    console.log('[BROWSER] Intercepted new window request:', url);
+                    this.createTab(url);
+                }
+            }
+        });
+
         this.newTabBtn.addEventListener('click', () => this.createTab());
 
         this.omnibox.addEventListener('keydown', (e) => {
