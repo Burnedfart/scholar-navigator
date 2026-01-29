@@ -103,9 +103,6 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
 
         const { ScramjetController } = scramjetBundle;
 
-        // Use standard HTTPS port (443) for better censorship evasion
-        // Censored networks often allow standard ports but block non-standard ones
-        // Format: wss://domain:443/path or just wss://domain/path (443 is implied)
         const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://my-site.boxathome.net/wisp/";
 
         // DIAGNOSTIC: Test WebSocket connectivity before proceeding

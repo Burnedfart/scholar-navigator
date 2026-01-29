@@ -116,9 +116,7 @@ function shutdown() {
 }
 
 // Start server
-// Use port 443 (standard HTTPS) to avoid port-based blocking on censored networks
-// On Linux, you may need to run with sudo or use port forwarding
-const PORT = parseInt(process.env.PORT || "443");
+const PORT = parseInt(process.env.PORT || "3000");
 const HOST = "0.0.0.0";
 
 server.listen(PORT, HOST, () => {
