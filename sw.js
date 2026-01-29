@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v16'; // Referrer-based redirect fix
+const VERSION = 'v17'; // Header-based loop prevention
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -129,38 +129,39 @@ async function handleRequest(event) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
 
             // Catch top-level navigations (native tabs) and redirect to our Shell
-            // IMPORTANT: We MUST avoid redirecting if the request is coming from our own shell (index.html)
-            // or if it's explicitly marked as an iframe/embed.
+            // Scramjet adds "Inception-Guard: 1" to iframe/AJAX requests.
+            // If this header is missing AND it's a document/navigate request, it's a new native tab.
             const isTopLevel = isNavigationRequest && fetchDest === 'document';
-            const isFromShell = event.request.referrer && event.request.referrer.includes('index.html');
+            const hasInceptionGuard = event.request.headers.get('Inception-Guard') === '1';
 
-            if (isTopLevel && !isFromShell && !isIframe) {
-                console.log(`SW: 🔄 Top-level proxy navigation detected: ${url}`);
+            // Secondary check: Referrer check as fallback
+            const referrer = event.request.referrer || '';
+            const isFromOurShell = referrer.includes('index.html') || referrer.includes('/proxy/');
+
+            if (isTopLevel && !hasInceptionGuard && !isFromOurShell && !isIframe) {
+                console.log(`SW: 🔄 Top-level proxy navigation detected (New Tab): ${url}`);
 
                 let targetUrl = url;
                 try {
                     const prefix = scramjet.config.prefix;
-                    const pathAfterPrefix = url.split(prefix)[1] || '';
-
-                    if (pathAfterPrefix.startsWith('http')) {
-                        // Plain URL format: /service/https://...
-                        targetUrl = decodeURIComponent(pathAfterPrefix);
-                    } else {
-                        // Encoded URL format: /service/xor/[encoded]
-                        const parts = pathAfterPrefix.split('/');
-                        const encodedPart = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
-                        if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
-                            try {
+                    if (url.includes(prefix)) {
+                        const pathAfterPrefix = url.split(prefix)[1] || '';
+                        if (pathAfterPrefix.startsWith('http')) {
+                            targetUrl = decodeURIComponent(pathAfterPrefix);
+                        } else {
+                            const parts = pathAfterPrefix.split('/');
+                            const encodedPart = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
+                            if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
                                 targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
-                            } catch (e) { /* fallback to path */ }
+                            }
                         }
                     }
-                } catch (e) { /* ignore extraction errors */ }
+                } catch (e) { /* fallback to proxied url */ }
 
                 const shellUrl = new URL('./index.html', self.location.href);
                 shellUrl.searchParams.set('url', targetUrl);
 
-                console.log(`SW: 🚀 Redirecting to shell: ${shellUrl.href}`);
+                console.log(`SW: 🚀 Redirecting new tab to shell: ${shellUrl.href}`);
                 return Response.redirect(shellUrl.href, 302);
             }
 
