@@ -140,58 +140,64 @@ window.WispHealthChecker = {
 
         const recommendations = [];
 
-        // Test HTTP first
-        const httpResult = await this.testHttpHealth(httpUrl);
-
-        if (!httpResult.success) {
-            return {
-                diagnosis: 'Server is completely unreachable. The backend server may be down, or DNS is not resolving.',
-                recommendations: [
-                    'Check if the server is running',
-                    'Verify DNS configuration',
-                    'Check firewall rules on the server',
-                    'Ensure Oracle Cloud security lists allow inbound traffic'
-                ]
-            };
-        }
-
-        // HTTP works, now test WebSocket
-        const wsResult = await this.testConnection(wispUrl);
+        // 1. Test HTTP and WebSocket in parallel or sequence
+        // We test HTTP primarily as a fallback and for detailed error reporting
+        const [httpResult, wsResult] = await Promise.all([
+            this.testHttpHealth(httpUrl),
+            this.testConnection(wispUrl, 7000) // Slightly longer timeout for restricted networks
+        ]);
 
         if (wsResult.success) {
-            return {
-                diagnosis: 'All systems operational! WebSocket connection is working.',
-                recommendations: ['No action needed']
-            };
+            this.isHealthy = true;
+            if (httpResult.success) {
+                return {
+                    diagnosis: 'All systems operational! WebSocket connection is working.',
+                    recommendations: ['No action needed']
+                };
+            } else {
+                return {
+                    diagnosis: 'WebSocket is working, but the HTTP API is unreachable. This is unusual but the proxy should still function.',
+                    recommendations: [
+                        'The proxy uses WebSocket for traffic, so it should work normally.',
+                        'Check if the /api/health endpoint is blocked by your network.',
+                        'Verify CORS settings on the server if testing from a new domain.'
+                    ]
+                };
+            }
         }
 
-        // HTTP works but WebSocket doesn't - classic censorship scenario
-        let diagnosis = 'HTTP requests work, but WebSocket connections are blocked. ';
+        // WebSocket failed
+        this.isHealthy = false;
+        let diagnosis = '';
 
-        if (wsResult.closeCode === 1006) {
-            diagnosis += 'This is typical of network-level censorship or deep packet inspection (DPI).';
+        if (!httpResult.success) {
+            diagnosis = 'Server is completely unreachable. Both HTTP and WebSocket failed. ';
             recommendations.push(
-                'Try using standard HTTPS port 443 instead of custom ports',
-                'Consider using a CDN like Cloudflare with WebSocket proxying',
-                'Implement WebSocket obfuscation or disguising techniques',
-                'Use a VPN or proxy to bypass the censorship',
-                'Contact network administrator about WebSocket blocking'
-            );
-        } else if (wsResult.closeCode === 1015) {
-            diagnosis += 'TLS handshake failed, suggesting certificate issues or TLS inspection.';
-            recommendations.push(
-                'Verify SSL certificate is valid and not expired',
-                'Check if the network is performing TLS interception',
-                'Ensure certificate chain is complete',
-                'Try accessing via VPN to rule out TLS inspection'
+                'Check if the server is running',
+                'Verify DNS configuration for ' + new URL(wispUrl).hostname,
+                'Check if your network blocks all traffic to this domain'
             );
         } else {
-            diagnosis += `Connection closed with code ${wsResult.closeCode}.`;
-            recommendations.push(
-                'Check server logs for connection errors',
-                'Verify WebSocket endpoint is correctly configured',
-                'Test from different network to isolate the issue'
-            );
+            diagnosis = 'HTTP requests work, but WebSocket connections are blocked. ';
+
+            if (wsResult.closeCode === 1006) {
+                diagnosis += 'This is typical of network-level censorship or deep packet inspection (DPI).';
+                recommendations.push(
+                    'Try using standard HTTPS port 443 instead of custom ports',
+                    'Consider using a CDN like Cloudflare with WebSocket proxying',
+                    'Implement WebSocket obfuscation techniques',
+                    'Use a VPN to bypass the network restriction'
+                );
+            } else if (wsResult.closeCode === 1015) {
+                diagnosis += 'TLS handshake failed, suggesting certificate issues or TLS inspection.';
+                recommendations.push(
+                    'Verify SSL certificate is valid',
+                    'Check if the network is performing TLS interception'
+                );
+            } else {
+                diagnosis += `Connection closed with code ${wsResult.closeCode}.`;
+                recommendations.push('Test from a different network to isolate the issue');
+            }
         }
 
         return { diagnosis, recommendations };

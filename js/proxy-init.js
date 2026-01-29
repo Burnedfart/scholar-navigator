@@ -144,52 +144,8 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
                 diagResult.recommendations.forEach(rec => console.log(`   - ${rec}`));
             }
 
-            // If WebSocket is blocked but HTTP works, show user-friendly warning
-            if (!window.WispHealthChecker.isHealthy) {
-                console.warn('⚠️ [PROXY] WebSocket connection may be blocked or restricted');
-                console.warn('⚠️ [PROXY] The proxy will attempt to connect, but may fail on this network');
-
-                // Show warning banner to user
-                setTimeout(() => {
-                    const banner = document.getElementById('network-warning-banner');
-                    const closeBtn = document.getElementById('warning-close-btn');
-
-                    if (banner) {
-                        banner.classList.remove('hidden');
-
-                        // Auto-hide after 10 seconds
-                        const autoHideTimer = setTimeout(() => {
-                            banner.classList.add('hidden');
-                        }, 10000);
-
-                        // Close button handler
-                        if (closeBtn) {
-                            closeBtn.addEventListener('click', () => {
-                                banner.classList.add('hidden');
-                                clearTimeout(autoHideTimer);
-                            }, { once: true });
-                        }
-                    }
-                }, 1000); // Show after a brief delay
-            }
-        }
-
-        // DIAGNOSTIC: Test WebSocket connectivity before proceeding
-        if (window.WispHealthChecker) {
-            console.log('🔬 [PROXY] Running WebSocket diagnostics...');
-            const healthUrl = wispUrl.replace(/^wss?/, location.protocol.replace(':', ''))
-                .replace('/wisp/', '/api/health');
-
-            const diagResult = await window.WispHealthChecker.diagnose(wispUrl, healthUrl);
-            console.log('📊 [PROXY] Diagnosis:', diagResult.diagnosis);
-
-            if (diagResult.recommendations && diagResult.recommendations.length > 0) {
-                console.log('💡 [PROXY] Recommendations:');
-                diagResult.recommendations.forEach(rec => console.log(`   - ${rec}`));
-            }
-
-            // If WebSocket is blocked but HTTP works, show user-friendly warning
-            if (!window.WispHealthChecker.isHealthy) {
+            // If WebSocket is explicitly confirmed blocked, show user-friendly warning
+            if (window.WispHealthChecker.isHealthy === false) {
                 console.warn('⚠️ [PROXY] WebSocket connection may be blocked or restricted');
                 console.warn('⚠️ [PROXY] The proxy will attempt to connect, but may fail on this network');
 
