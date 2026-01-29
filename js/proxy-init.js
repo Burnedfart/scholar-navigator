@@ -128,7 +128,7 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
 
         const { ScramjetController } = scramjetBundle;
 
-        const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://scholarnavigator.top/wisp/";
+        const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://navigator.scholarnavigator.workers.dev/wisp/";
 
         // DIAGNOSTIC: Test WebSocket connectivity before proceeding
         if (window.WispHealthChecker) {
