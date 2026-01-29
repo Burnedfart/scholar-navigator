@@ -201,6 +201,14 @@ class Browser {
         };
         this.appNameInput.addEventListener('keydown', handleModalEnter);
         this.appUrlInput.addEventListener('keydown', handleModalEnter);
+
+        // Network Warning Close
+        const warningClose = document.getElementById('warning-close-btn');
+        if (warningClose) {
+            warningClose.addEventListener('click', () => {
+                document.getElementById('network-warning-banner').classList.add('hidden');
+            });
+        }
     }
 
     updateProxyStatus(status) {
