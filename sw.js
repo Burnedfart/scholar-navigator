@@ -13,8 +13,10 @@ try {
 }
 
 // Ensure immediate control
+const VERSION = 'v15'; // Redirect fix
+
 self.addEventListener('install', (event) => {
-    console.log('SW: 📥 Installing version 14 (Handshake fix)...');
+    console.log(`SW: 📥 Installing version ${VERSION}...`);
     self.skipWaiting();
 });
 
@@ -126,30 +128,33 @@ async function handleRequest(event) {
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
 
-            // Refined Top-Level Navigation Interceptor
-            // This catches when proxied URLs are opened in a native browser tab (e.g. "Open in new tab")
-            // and redirects them back into the browser shell.
-            const isTopLevelNavigation = isNavigationRequest && fetchDest === 'document';
-            const isNotIframe = !isIframe;
-            const isNotFromOurShell = !event.request.referrer || !event.request.referrer.includes('index.html');
-
-            if (isTopLevelNavigation && isNotIframe && isNotFromOurShell) {
-                console.log(`SW: 🔄 Top-level proxy navigation detected, redirecting to shell: ${url}`);
+            // Catch top-level navigations (native tabs) and redirect to our Shell
+            // We ignore iframes and our own UI (index.html) to prevent infinite loops
+            if (isNavigationRequest && fetchDest === 'document' && !isIframe) {
+                console.log(`SW: 🔄 Top-level proxy navigation detected: ${url}`);
 
                 let targetUrl = url;
                 try {
-                    // Extract original URL for a cleaner deep-link
+                    // Try to extract original URL for a cleaner link (Scramjet 2.x)
+                    // URL format: [origin]/service/[codec]/[encoded_url]
                     const prefix = scramjet.config.prefix;
-                    const pathAfterPrefix = url.split(prefix)[1] || '';
-                    const encodedPart = pathAfterPrefix.includes('/') ? pathAfterPrefix.split('/').slice(1).join('/') : pathAfterPrefix;
-
-                    if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
-                        targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
+                    if (url.includes(prefix)) {
+                        const pathAfterPrefix = url.split(prefix)[1] || '';
+                        // Skip codec folder
+                        const parts = pathAfterPrefix.split('/');
+                        if (parts.length > 1) {
+                            const encodedPart = parts.slice(1).join('/');
+                            if (self.__scramjet$codecs && self.__scramjet$codecs.xor) {
+                                targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
+                            }
+                        }
                     }
-                } catch (e) { /* fallback to proxied url */ }
+                } catch (e) { /* fallback to original proxied url */ }
 
                 const shellUrl = new URL('./index.html', self.location.href);
                 shellUrl.searchParams.set('url', targetUrl);
+
+                console.log(`SW: 🚀 Redirecting to shell: ${shellUrl.href}`);
                 return Response.redirect(shellUrl.href, 302);
             }
 
