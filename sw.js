@@ -33,7 +33,10 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Scramjet 2.0.0-alpha defines $scramjetLoadWorker on globalThis
+let scramjet = null; // Will be created later
+let scramjetConfigLoaded = false;
+
+// Store the bundle for later instantiation
 let scramjetBundle;
 if (typeof self.$scramjetLoadWorker === 'function') {
     scramjetBundle = self.$scramjetLoadWorker();
@@ -41,14 +44,7 @@ if (typeof self.$scramjetLoadWorker === 'function') {
     scramjetBundle = self.__scramjet$bundle;
 }
 
-let scramjet;
-let scramjetConfigLoaded = false;
-
-if (scramjetBundle) {
-    const { ScramjetServiceWorker } = scramjetBundle;
-    scramjet = new ScramjetServiceWorker();
-    console.log('SW: ✅ ScramjetServiceWorker created');
-} else {
+if (!scramjetBundle) {
     console.error('SW: ❌ Scramjet bundle not found! __scramjet$bundle is undefined.');
 }
 
@@ -259,10 +255,18 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener('message', async (event) => {
     if (event.data?.type === 'init_complete') {
         console.log('SW: 📨 Received init_complete signal');
+
+        // NOW it's safe to create the ScramjetServiceWorker instance
+        if (!scramjet && scramjetBundle) {
+            const { ScramjetServiceWorker } = scramjetBundle;
+            scramjet = new ScramjetServiceWorker();
+            console.log('SW: ✅ ScramjetServiceWorker created');
+        }
+
         await ensureConfigLoaded();
     } else if (event.data?.type === 'invalidate_config') {
         scramjetConfigLoaded = false;
-        // NEW: Force close database handle to allow deletion
+        // Force close database handle to allow deletion
         if (scramjet && scramjet.db) {
             try { scramjet.db.close(); } catch (e) { }
         }
