@@ -50,8 +50,10 @@ class Browser {
             await window.ProxyService.ready;
             this.updateProxyStatus('connected');
         } catch (e) {
+            console.error('[BROWSER] Proxy initialization error:', e);
             this.updateProxyStatus('error');
-            alert('Proxy initialization failed. Please reload.');
+            // Don't show alert - the error handler will show proper recovery UI if needed
+            // This prevents false positives during SW updates
         }
     }
 

@@ -263,12 +263,38 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
         }
 
 
+
         // CRITICAL: Signal to Service Worker that database is ready
-        if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({
+        // Wait for SW to be controlling (handles SW update race condition)
+        let swController = navigator.serviceWorker.controller;
+
+        if (!swController) {
+            console.log('⏳ [PROXY] Waiting for Service Worker to take control...');
+
+            // Wait up to 2 seconds for SW to take control
+            const controllerTimeout = new Promise((resolve) => setTimeout(() => resolve(null), 2000));
+            const controllerReady = new Promise((resolve) => {
+                const checkController = () => {
+                    if (navigator.serviceWorker.controller) {
+                        resolve(navigator.serviceWorker.controller);
+                    } else {
+                        setTimeout(checkController, 100);
+                    }
+                };
+                checkController();
+            });
+
+            swController = await Promise.race([controllerReady, controllerTimeout]);
+        }
+
+        if (swController) {
+            swController.postMessage({
                 type: 'init_complete'
             });
             console.log('📨 [PROXY] Sent init_complete signal to Service Worker');
+        } else {
+            console.warn('⚠️ [PROXY] No SW controller available, skipping init_complete signal');
+            // This is OK - SW will wait for signal, but page can still function
         }
 
         // 7. Initialize BareMux Transport (only if cross-origin isolated)
