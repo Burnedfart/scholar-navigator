@@ -294,9 +294,18 @@
 
     // Start initialization timeout
     function startInitTimeout() {
+        if (initTimer) {
+            clearTimeout(initTimer);
+        }
+
         console.log(`⏱️ [ERROR HANDLER] Starting ${INIT_TIMEOUT / 1000}s initialization timeout`);
 
         initTimer = setTimeout(() => {
+            if (window.ProxyService && window.ProxyService.initialized) {
+                console.log('✅ [ERROR HANDLER] Ignored timeout: already initialized');
+                return;
+            }
+
             console.error('⏰ [ERROR HANDLER] Initialization timeout exceeded!');
             showEmergencyUI(
                 'Initialization is taking too long. The application may be stuck due to corrupted storage.',
@@ -310,8 +319,8 @@
         if (initTimer) {
             clearTimeout(initTimer);
             initTimer = null;
-            console.log('✅ [ERROR HANDLER] Initialization completed within timeout');
         }
+        console.log('✅ [ERROR HANDLER] Initialization completed within timeout');
     }
 
     // Global error handlers
