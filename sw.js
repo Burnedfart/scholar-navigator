@@ -126,35 +126,30 @@ async function handleRequest(event) {
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
 
-            // fetchDest and isIframe are defined above
+            // Refined Top-Level Navigation Interceptor
+            // This catches when proxied URLs are opened in a native browser tab (e.g. "Open in new tab")
+            // and redirects them back into the browser shell.
+            const isTopLevelNavigation = isNavigationRequest && fetchDest === 'document';
+            const isNotIframe = !isIframe;
+            const isNotFromOurShell = !event.request.referrer || !event.request.referrer.includes('index.html');
 
-            // If it's a top-level navigation (not in an iframe), redirect back into the browser shell
-            if (isNavigationRequest && !isIframe) {
+            if (isTopLevelNavigation && isNotIframe && isNotFromOurShell) {
                 console.log(`SW: 🔄 Top-level proxy navigation detected, redirecting to shell: ${url}`);
 
                 let targetUrl = url;
                 try {
-                    // Extract the original target URL from the proxied URL
+                    // Extract original URL for a cleaner deep-link
                     const prefix = scramjet.config.prefix;
                     const pathAfterPrefix = url.split(prefix)[1] || '';
-
-                    // Most Scramjet 2.0 URLs are [prefix][codec]/[encoded_url]
-                    // We try to skip the codec part (e.g. "xor/")
                     const encodedPart = pathAfterPrefix.includes('/') ? pathAfterPrefix.split('/').slice(1).join('/') : pathAfterPrefix;
 
                     if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
                         targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
-                        console.log(`SW: 🔓 Decoded target URL: ${targetUrl}`);
                     }
-                } catch (e) {
-                    console.warn('SW: ⚠️ Failed to decode URL for redirect, using proxied URL:', e);
-                }
+                } catch (e) { /* fallback to proxied url */ }
 
-                // Redirect to the main UI with the URL as a parameter
-                // This will cause the browser to open a new native tab containing our shell
                 const shellUrl = new URL('./index.html', self.location.href);
                 shellUrl.searchParams.set('url', targetUrl);
-
                 return Response.redirect(shellUrl.href, 302);
             }
 

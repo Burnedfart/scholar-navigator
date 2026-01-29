@@ -39,23 +39,38 @@ class Browser {
     }
 
     async init() {
+        // INCEPTION GUARD: Never load the browser UI inside an iframe
+        if (window.self !== window.top) {
+            console.warn('[BROWSER] Inception detected (running in iframe). Aborting UI initialization.');
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#fff;font-family:sans-serif;">Redirecting to content...</div>';
+
+            // If there's a URL in the query, try to redirect the iframe to it directly
+            const params = new URLSearchParams(window.location.search);
+            const urlToOpen = params.get('url');
+            if (urlToOpen) {
+                window.location.href = decodeURIComponent(urlToOpen);
+            }
+            return;
+        }
+
         this.bindEvents();
         this.checkThemeContrast();
         this.updateProxyStatus('loading');
 
-        // Check for URL in query parameters (for deep linking / open-in-new-tab redirect)
+        // Check for URL in query parameters
         const params = new URLSearchParams(window.location.search);
         const urlToOpen = params.get('url');
 
-        if (urlToOpen) {
+        if (urlToOpen && urlToOpen !== 'browser://home') {
+            const decodedUrl = decodeURIComponent(urlToOpen);
+
             // Clean up the address bar
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
 
-            console.log('[BROWSER] Opening external URL:', urlToOpen);
-            this.createTab(decodeURIComponent(urlToOpen));
+            console.log('[BROWSER] Deep-linking to:', decodedUrl);
+            this.createTab(decodedUrl);
         } else {
-            // Create initial tab (Home)
             this.createTab();
         }
 
@@ -104,18 +119,30 @@ class Browser {
     }
 
     bindEvents() {
-        // Intercept new window requests from Scramjet
+        // Intercept new window requests from Scramjet or the Service Worker
         window.addEventListener('message', (e) => {
             if (!e.data) return;
 
-            // Scramjet 2.x "open" message format
-            // Often sent as { type: 'scramjet:open', url: '...' } or nested
-            if (e.data.type === 'scramjet:open' || (e.data.scramjet && e.data.scramjet.type === 'open')) {
-                const url = e.data.url || (e.data.scramjet && e.data.scramjet.url);
-                if (url) {
-                    console.log('[BROWSER] Intercepted new window request:', url);
-                    this.createTab(url);
-                }
+            // Handle various "open" message formats
+            // 1. Service Worker or internal redirect: { type: 'proxy:open', url: '...' }
+            // 2. Scramjet 2.x: { type: 'scramjet:open', url: '...' }
+            // 3. Nested Scramjet: { scramjet: { type: 'open', url: '...' } }
+
+            let url = null;
+            if (e.data.type === 'proxy:open') {
+                url = e.data.url;
+            } else if (e.data.type === 'scramjet:open') {
+                url = e.data.url;
+            } else if (e.data.scramjet && e.data.scramjet.type === 'open') {
+                url = e.data.url || e.data.scramjet.url;
+            }
+
+            if (url) {
+                console.log('[BROWSER] Intercepted link/window request:', url);
+
+                // If it's an encoded Scramjet URL, we might want to decode it for the tab bar UI, 
+                // but navigate() handles strings fine.
+                this.createTab(url);
             }
         });
 
