@@ -1,6 +1,7 @@
 /* Browser Stylings */
 :root {
-    --bg-color: #f0f0f0;
+    /* Default Cloud Theme */
+    --bg-color: #f0f2f5;
     --window-bg: #ffffff;
     --tab-bar-bg: #dee1e6;
     --tab-active-bg: #ffffff;
@@ -15,10 +16,161 @@
     --danger-color: #d93025;
     --radius-lg: 12px;
     --radius-md: 8px;
-    --radius-sm: 4px;
-    --logo-filter: invert(1);
-    /* Default to dark logo for light theme */
+    --logo-filter: none;
 }
+
+html[data-theme="ink"],
+html[data-theme="nebula"],
+html[data-theme="coffee"] {
+    --logo-filter: invert(1) brightness(2);
+}
+
+html[data-theme="ink"] {
+    --bg-color: #000000;
+    --window-bg: #121212;
+    --tab-bar-bg: #000000;
+    --tab-active-bg: #121212;
+    --tab-hover-bg: #1f1f1f;
+    --toolbar-bg: #121212;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --border-color: #3c4043;
+    --omnibox-bg: #202124;
+    --omnibox-focus-bg: #000000;
+    --accent-color: #8ab4f8;
+}
+
+html[data-theme="coffee"] {
+    --bg-color: #2c1e1a;
+    --window-bg: #3d2b1f;
+    --tab-bar-bg: #1a120f;
+    --tab-active-bg: #3d2b1f;
+    --tab-hover-bg: #4e3629;
+    --toolbar-bg: #3d2b1f;
+    --text-primary: #f5ebe0;
+    --text-secondary: #d5bdaf;
+    --border-color: #5e4a3b;
+    --omnibox-bg: #2c1e1a;
+    --omnibox-focus-bg: #1a120f;
+    --accent-color: #a98467;
+}
+
+html[data-theme="nebula"] {
+    --bg-color: #0b071a;
+    --window-bg: linear-gradient(145deg, #160d33 0%, #1a1040 100%);
+    --tab-bar-bg: #05030d;
+    --tab-active-bg: #160d33;
+    --tab-hover-bg: #241452;
+    --toolbar-bg: #160d33;
+    --text-primary: #e0d7f5;
+    --text-secondary: #b0a1d9;
+    --border-color: #3b2a7d;
+    --omnibox-bg: #0b071a;
+    --omnibox-focus-bg: #05030d;
+    --accent-color: #9d7fe6;
+}
+
+/* Modal Headers */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0 !important;
+}
+
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Settings Styles */
+.settings-modal-content {
+    width: 400px;
+    max-width: 90vw;
+}
+
+.settings-section {
+    margin-bottom: 24px;
+}
+
+.settings-section label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.theme-selection {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.theme-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background: var(--omnibox-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-weight: 500;
+}
+
+.theme-btn:hover {
+    border-color: var(--accent-color);
+    background: var(--tab-hover-bg);
+}
+
+.theme-btn.active {
+    border-color: var(--accent-color);
+    background: rgba(26, 115, 232, 0.1);
+}
+
+.theme-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-preview.cloud {
+    background: #ffffff;
+}
+
+.theme-preview.ink {
+    background: #000000;
+}
+
+.theme-preview.coffee {
+    background: #3d2b1f;
+}
+
+.theme-preview.nebula {
+    background: #160d33;
+}
+
 
 body {
     margin: 0;
@@ -102,7 +254,7 @@ body {
 }
 
 .modal-content {
-    background-color: var(--window-bg);
+    background: var(--window-bg);
     padding: 24px;
     border-radius: var(--radius-lg);
     width: 320px;
@@ -351,9 +503,6 @@ body {
     flex: 1;
     display: flex;
     justify-content: flex-start;
-    /* Left justify */
-    margin-right: 12px;
-    /* Space from status indicator */
 }
 
 .omnibox-wrapper {
@@ -392,9 +541,10 @@ body {
 }
 
 .window-controls {
-    width: 40px;
     display: flex;
-    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
 }
 
 .status-indicator {
@@ -450,7 +600,7 @@ iframe.browser-viewport.active {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: var(--window-bg);
+    background: var(--window-bg);
     z-index: 10;
 }
 
@@ -504,7 +654,7 @@ iframe.browser-viewport.active {
 }
 
 .grid-item:hover .item-icon {
-    background-color: #fff;
+    background-color: var(--tab-hover-bg);
 }
 
 .item-title {

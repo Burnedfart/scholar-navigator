@@ -28,6 +28,12 @@ class Browser {
         this.btnAddApp = document.getElementById('btn-add-app');
         this.btnCancelApp = document.getElementById('btn-cancel-app');
 
+        // Settings Elements
+        this.settingsBtn = document.getElementById('settings-btn');
+        this.settingsModal = document.getElementById('settings-modal');
+        this.settingsCloseBtn = document.getElementById('settings-close-btn');
+        this.themeBtns = document.querySelectorAll('.theme-btn');
+
         this.navBtns = {
             back: document.getElementById('nav-back'),
             forward: document.getElementById('nav-forward'),
@@ -54,7 +60,7 @@ class Browser {
         }
 
         this.bindEvents();
-        this.checkThemeContrast();
+        this.loadTheme();
         this.updateProxyStatus('loading');
 
         // Check for URL in query parameters
@@ -85,38 +91,7 @@ class Browser {
         }
     }
 
-    checkThemeContrast() {
-        // Automatic Logo Contrast Detection
-        const root = document.documentElement;
-        const bgColor = getComputedStyle(root).getPropertyValue('--window-bg').trim();
 
-        // Simple brightness check
-        const isDark = (color) => {
-            let r, g, b;
-            if (color.startsWith('#')) {
-                const hex = color.replace('#', '');
-                r = parseInt(hex.substr(0, 2), 16);
-                g = parseInt(hex.substr(2, 2), 16);
-                b = parseInt(hex.substr(4, 2), 16);
-            } else if (color.startsWith('rgb')) {
-                const parts = color.match(/\d+/g);
-                r = parseInt(parts[0]);
-                g = parseInt(parts[1]);
-                b = parseInt(parts[2]);
-            } else {
-                return false; // Fallback, assume light
-            }
-            // Luminance formula
-            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-            return brightness < 128; // < 128 is dark
-        };
-
-        if (isDark(bgColor)) {
-            root.style.setProperty('--logo-filter', 'none'); // White logo on dark
-        } else {
-            root.style.setProperty('--logo-filter', 'invert(1)'); // Black logo on light
-        }
-    }
 
     bindEvents() {
         // Intercept new window requests from Scramjet or the Service Worker
@@ -202,6 +177,20 @@ class Browser {
         this.appNameInput.addEventListener('keydown', handleModalEnter);
         this.appUrlInput.addEventListener('keydown', handleModalEnter);
 
+        // Settings Events
+        this.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.settingsCloseBtn.addEventListener('click', () => this.closeSettings());
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) this.closeSettings();
+        });
+
+        this.themeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.getAttribute('data-theme');
+                this.setTheme(theme);
+            });
+        });
+
         // Network Warning Close
         const warningClose = document.getElementById('warning-close-btn');
         if (warningClose) {
@@ -209,6 +198,38 @@ class Browser {
                 document.getElementById('network-warning-banner').classList.add('hidden');
             });
         }
+    }
+
+    // Settings & Themes
+    openSettings() {
+        this.settingsModal.classList.remove('hidden');
+        this.updateThemeActiveState();
+    }
+
+    closeSettings() {
+        this.settingsModal.classList.add('hidden');
+    }
+
+    setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('browser_theme', theme);
+        this.updateThemeActiveState();
+    }
+
+    loadTheme() {
+        const savedTheme = localStorage.getItem('browser_theme') || 'cloud';
+        this.setTheme(savedTheme);
+    }
+
+    updateThemeActiveState() {
+        const currentTheme = localStorage.getItem('browser_theme') || 'cloud';
+        this.themeBtns.forEach(btn => {
+            if (btn.getAttribute('data-theme') === currentTheme) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
     }
 
     updateProxyStatus(status) {
@@ -465,9 +486,6 @@ class Browser {
                 if (newTab.homeElement) newTab.homeElement.classList.add('hidden');
                 if (newTab.iframe) newTab.iframe.classList.add('active');
                 this.omnibox.value = newTab.url;
-                // If it was loading? We don't track per-tab loading state deeply in this simple refactor, 
-                // but checking connection/spin could be global or per active tab. 
-                // For now, simplicity: active tab determines spinner.
             }
         }
     }
@@ -602,33 +620,23 @@ class Browser {
             };
         } else {
             iconEl.style.display = 'none'; // Blank circle is default via CSS effectively or just hidden image
-            // CSS for .tab-favicon has a background-color #ccc so hidden img shows that.
         }
     }
 
     async fetchFavicon(tab, url) {
-        // Attempt to fetch the page content to parse for favicon
-        // We use fetch() - if CORS fails, we might fail to get it. 
-        // As a proxy, ideally we'd fetch through the proxy helper if available, but window.fetch 
-        // will go through the Service Worker if it intercepts matching requests.
         try {
             const response = await fetch(url);
             const text = await response.text();
 
             // Simple regex to find <link rel="icon" href="...">
-            // Supports: rel="icon", rel="shortcut icon", href can be relative or absolute
             const linkRegex = /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["'][^>]*>/i;
             const match = text.match(linkRegex);
 
             if (match && match[1]) {
                 let faviconUrl = match[1];
-                // Resolve relative URLs
                 faviconUrl = new URL(faviconUrl, url).href;
                 this.updateFavicon(tab, faviconUrl);
             } else {
-                // Try default only if not found (less strict per prompt, but good fallback)
-                // Prompt says: "If favicon fetch fails: Fall back to a blank circle."
-                // So we don't try strict guessing if regex fails.
                 this.updateFavicon(tab, '');
             }
         } catch (e) {
