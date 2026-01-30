@@ -686,6 +686,8 @@ class Browser {
                                                 href: link.href,
                                                 target: target,
                                                 dataset: link.dataset,
+                                                onclick: link.onclick?.toString(),
+                                                outerHTML: link.outerHTML.substring(0, 500), // First 500 chars
                                                 attributes: Array.from(link.attributes).map(a => ({ name: a.name, value: a.value }))
                                             });
 

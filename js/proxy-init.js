@@ -228,6 +228,10 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
                 all: new URL("./lib/scramjet/scramjet.all.js", window.APP_BASE_URL).href,
                 sync: new URL("./lib/scramjet/scramjet.sync.js", window.APP_BASE_URL).href,
             },
+            codec: {
+                // Disable URL truncation to prevent "domain.com/..." links
+                truncate: false,
+            },
         };
 
         // Note: We never run in iframe mode (inception guard aborts early)
