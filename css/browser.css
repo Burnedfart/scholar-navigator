@@ -178,6 +178,19 @@ html[data-theme="nebula"] {
 }
 
 /* Cloak Settings */
+#btn-trigger-cloak {
+    width: 100%;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 0.5px solid var(--accent-color);
+    transition: background 0.2s;
+    background-color: transparent;
+    color: var(--text-secondary);
+}
+
 .cloak-settings {
     margin-top: 16px;
     padding-top: 16px;
@@ -203,6 +216,8 @@ html[data-theme="nebula"] {
     cursor: pointer;
     accent-color: var(--accent-color);
 }
+
+
 
 /* Disguise Settings */
 .disguise-settings {
@@ -505,16 +520,8 @@ html[data-theme="custom"] body {
 }
 
 .btn-secondary {
-    width: 100%;
-    padding: 8px 16px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 0.5px solid var(--accent-color);
-    transition: background 0.2s;
-    background-color: var(--accent-color);
-    color: var(--bg-color);
+    background-color: transparent;
+    color: var(--text-secondary);
 }
 
 .btn-secondary:hover {
