@@ -505,8 +505,16 @@ html[data-theme="custom"] body {
 }
 
 .btn-secondary {
-    background-color: transparent;
-    color: var(--text-secondary);
+    width: 100%;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 0.5px solid var(--accent-color);
+    transition: background 0.2s;
+    background-color: var(--accent-color);
+    color: var(--bg-color);
 }
 
 .btn-secondary:hover {
