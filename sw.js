@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v20'; // Robust Logo Filter Update
+const VERSION = 'v18'; // Client-side window.open hijacking
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -136,43 +136,6 @@ async function handleRequest(event) {
         // Check if this request should be proxied
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
-
-            // Catch top-level navigations (native tabs) and redirect to our Shell
-            // Scramjet adds "Inception-Guard: 1" to iframe/AJAX requests.
-            // If this header is missing AND it's a document/navigate request, it's a new native tab.
-            const isTopLevel = isNavigationRequest && fetchDest === 'document';
-            const hasInceptionGuard = event.request.headers.get('Inception-Guard') === '1';
-
-            // Secondary check: Referrer check as fallback
-            const referrer = event.request.referrer || '';
-            const isFromOurShell = referrer.includes('index.html') || referrer.includes('/proxy/');
-
-            if (isTopLevel && !hasInceptionGuard && !isFromOurShell && !isIframe) {
-                console.log(`SW: 🔄 Top-level proxy navigation detected (New Tab): ${url}`);
-
-                let targetUrl = url;
-                try {
-                    const prefix = scramjet.config.prefix;
-                    if (url.includes(prefix)) {
-                        const pathAfterPrefix = url.split(prefix)[1] || '';
-                        if (pathAfterPrefix.startsWith('http')) {
-                            targetUrl = decodeURIComponent(pathAfterPrefix);
-                        } else {
-                            const parts = pathAfterPrefix.split('/');
-                            const encodedPart = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
-                            if (encodedPart && self.__scramjet$codecs && self.__scramjet$codecs.xor) {
-                                targetUrl = self.__scramjet$codecs.xor.decode(encodedPart);
-                            }
-                        }
-                    }
-                } catch (e) { /* fallback to proxied url */ }
-
-                const shellUrl = new URL('./index.html', self.location.href);
-                shellUrl.searchParams.set('url', targetUrl);
-
-                console.log(`SW: 🚀 Redirecting new tab to shell: ${shellUrl.href}`);
-                return Response.redirect(shellUrl.href, 302);
-            }
 
             // PERFORMANCE: Use cache-first strategy for static resources
             if (isStaticResource(url)) {

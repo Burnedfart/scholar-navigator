@@ -578,6 +578,36 @@ class Browser {
                         if (this.activeTabId === tab.id) {
                             this.setLoading(false);
                         }
+
+                        // CRITICAL: Override window.open to intercept new tab/window requests
+                        // This is the key to preventing native tabs from opening
+                        try {
+                            const iframeWindow = tab.iframe.contentWindow;
+                            if (iframeWindow && !iframeWindow.__proxyTabsOverridden) {
+                                // Store the original for debugging
+                                iframeWindow.__originalOpen = iframeWindow.open;
+
+                                // Override window.open
+                                iframeWindow.open = (url, target, features) => {
+                                    console.log('[BROWSER] Intercepted window.open:', url);
+
+                                    // Create new tab in our proxy instead of native browser
+                                    this.createTab(url);
+
+                                    // Return a mock window object to prevent errors
+                                    return {
+                                        focus: () => { },
+                                        blur: () => { },
+                                        close: () => { }
+                                    };
+                                };
+
+                                iframeWindow.__proxyTabsOverridden = true;
+                            }
+                        } catch (e) {
+                            // Cross-origin errors are expected and can be safely ignored
+                            console.warn('[BROWSER] Could not override window.open (cross-origin):', e.message);
+                        }
                     };
                 } else {
                     console.error('Scramjet unavailable');
