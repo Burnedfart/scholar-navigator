@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="css/browser.css?v=25">
+    <link rel="stylesheet" href="css/browser.css?v=26">
 </head>
 
 <body>
@@ -79,6 +79,66 @@
                             <span>Nebula</span>
                         </button>
                     </div>
+                </div>
+                <div class="settings-section">
+                    <h4>Advanced</h4>
+                    <button id="btn-open-theme-editor" class="btn-secondary full-width-btn">
+                        Create Custom Theme
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Editor Modal -->
+        <div id="theme-editor-modal" class="modal-overlay hidden">
+            <div class="modal-content theme-editor-content">
+                <div class="modal-header">
+                    <h3>Theme Editor</h3>
+                    <button class="modal-close-btn" id="theme-editor-close-btn">✕</button>
+                </div>
+                <div class="theme-editor-scroll">
+                    <div class="form-group">
+                        <label>Theme Name</label>
+                        <input type="text" id="custom-theme-name" placeholder="My Awesome Theme">
+                    </div>
+                    <div class="color-grid">
+                        <div class="color-item">
+                            <label>Base Background</label>
+                            <input type="color" data-var="--bg-color">
+                        </div>
+                        <div class="color-item">
+                            <label>Window Background</label>
+                            <input type="color" data-var="--window-bg">
+                        </div>
+                        <div class="color-item">
+                            <label>Tab Bar</label>
+                            <input type="color" data-var="--tab-bar-bg">
+                        </div>
+                        <div class="color-item">
+                            <label>Omnibox</label>
+                            <input type="color" data-var="--omnibox-bg">
+                        </div>
+                        <div class="color-item">
+                            <label>Primary Text</label>
+                            <input type="color" data-var="--text-primary">
+                        </div>
+                        <div class="color-item">
+                            <label>Secondary Text</label>
+                            <input type="color" data-var="--text-secondary">
+                        </div>
+                        <div class="color-item">
+                            <label>Accent Color</label>
+                            <input type="color" data-var="--accent-color">
+                        </div>
+                        <div class="color-item">
+                            <label>Border Color</label>
+                            <input type="color" data-var="--border-color">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-reset-theme" class="btn-secondary">Reset</button>
+                    <button id="btn-save-theme" class="btn-primary">Save & Apply</button>
                 </div>
             </div>
         </div>
@@ -171,12 +231,12 @@
         </div>
     </div>
 
-    <script src="js/error-handler.js?v=25"></script>
-    <script src="js/storage-health.js?v=25"></script>
-    <script src="js/wisp-health.js?v=25"></script>
-    <script src="js/proxy-init.js?v=25"></script>
-    <script src="js/browser.js?v=25"></script>
-    <script src="js/debug.js?v=25"></script>
+    <script src="js/error-handler.js?v=26"></script>
+    <script src="js/storage-health.js?v=26"></script>
+    <script src="js/wisp-health.js?v=26"></script>
+    <script src="js/proxy-init.js?v=26"></script>
+    <script src="js/browser.js?v=26"></script>
+    <script src="js/debug.js?v=26"></script>
 </body>
 
 </html>

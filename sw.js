@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v25'; // Default Pin Customization Update
+const VERSION = 'v26'; // Theme Editor Update
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -51,7 +51,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v25'; // UI Customization Refresh
+const CACHE_NAME = 'scramjet-proxy-cache-v26'; // Theme Editor Refresh
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,

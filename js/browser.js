@@ -34,6 +34,15 @@ class Browser {
         this.settingsCloseBtn = document.getElementById('settings-close-btn');
         this.themeBtns = document.querySelectorAll('.theme-btn');
 
+        // Theme Editor Elements
+        this.themeEditorModal = document.getElementById('theme-editor-modal');
+        this.btnOpenThemeEditor = document.getElementById('btn-open-theme-editor');
+        this.btnCloseThemeEditor = document.getElementById('theme-editor-close-btn');
+        this.btnSaveTheme = document.getElementById('btn-save-theme');
+        this.btnResetTheme = document.getElementById('btn-reset-theme');
+        this.customThemeNameInput = document.getElementById('custom-theme-name');
+        this.colorInputs = document.querySelectorAll('.color-item input[type="color"]');
+
         this.navBtns = {
             back: document.getElementById('nav-back'),
             forward: document.getElementById('nav-forward'),
@@ -225,6 +234,38 @@ class Browser {
             warningClose.addEventListener('click', () => {
                 document.getElementById('network-warning-banner').classList.add('hidden');
             });
+            // Theme Editor Events
+            if (this.btnOpenThemeEditor) {
+                this.btnOpenThemeEditor.addEventListener('click', () => this.openThemeEditor());
+            }
+            if (this.btnCloseThemeEditor) {
+                this.btnCloseThemeEditor.addEventListener('click', () => this.closeThemeEditor());
+            }
+            if (this.themeEditorModal) {
+                this.themeEditorModal.addEventListener('click', (e) => {
+                    if (e.target === this.themeEditorModal) this.closeThemeEditor();
+                });
+            }
+            if (this.btnSaveTheme) {
+                this.btnSaveTheme.addEventListener('click', () => this.saveCustomTheme());
+            }
+            if (this.btnResetTheme) {
+                this.btnResetTheme.addEventListener('click', () => this.resetThemeEditor());
+            }
+
+            this.colorInputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const varName = e.target.getAttribute('data-var');
+                    const color = e.target.value;
+                    document.documentElement.style.setProperty(varName, color);
+
+                    // If updating primary text, we should ideally update the logo filter
+                    // For custom themes, we'll default to a simple light/dark filter logic
+                    if (varName === '--text-primary') {
+                        this.updateLogoFilterForColor(color);
+                    }
+                });
+            });
         }
     }
 
@@ -241,12 +282,125 @@ class Browser {
     setTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('browser_theme', theme);
+
+        if (theme === 'custom') {
+            this.applyCustomThemeVariables();
+        } else {
+            // Remove custom style overrides if switching back to preset
+            this.clearCustomThemeVariables();
+        }
+
         this.updateThemeActiveState();
     }
 
     loadTheme() {
         const savedTheme = localStorage.getItem('browser_theme') || 'cloud';
         this.setTheme(savedTheme);
+    }
+
+    // Theme Editor Logic
+    openThemeEditor() {
+        this.closeSettings();
+        this.themeEditorModal.classList.remove('hidden');
+
+        // Initialize inputs with current computed values
+        const rootStyle = getComputedStyle(document.documentElement);
+        this.colorInputs.forEach(input => {
+            const varName = input.getAttribute('data-var');
+            const color = rootStyle.getPropertyValue(varName).trim();
+            if (color.startsWith('#')) {
+                input.value = color;
+            } else if (color.startsWith('rgb')) {
+                // Convert rgb to hex for input[type="color"]
+                input.value = this.rgbToHex(color);
+            }
+        });
+
+        const savedData = JSON.parse(localStorage.getItem('custom_theme_data') || '{}');
+        this.customThemeNameInput.value = savedData.name || 'Custom Theme';
+    }
+
+    closeThemeEditor() {
+        this.themeEditorModal.classList.add('hidden');
+        // Revert to saved state if not saved
+        this.loadTheme();
+    }
+
+    resetThemeEditor() {
+        if (confirm('Reset custom theme to current colors?')) {
+            this.openThemeEditor();
+        }
+    }
+
+    saveCustomTheme() {
+        const themeData = {
+            name: this.customThemeNameInput.value || 'Custom Theme',
+            variables: {}
+        };
+
+        this.colorInputs.forEach(input => {
+            const varName = input.getAttribute('data-var');
+            themeData.variables[varName] = input.value;
+        });
+
+        // Add logo filter to the saved data
+        const textPrimary = themeData.variables['--text-primary'];
+        themeData.variables['--logo-filter'] = this.calculateLogoFilter(textPrimary);
+
+        localStorage.setItem('custom_theme_data', JSON.stringify(themeData));
+        this.setTheme('custom');
+        this.closeThemeEditor();
+
+        console.log('[THEME] Saved custom theme:', themeData.name);
+    }
+
+    applyCustomThemeVariables() {
+        const savedData = JSON.parse(localStorage.getItem('custom_theme_data') || '{}');
+        const variables = savedData.variables || {};
+
+        for (const [name, value] of Object.entries(variables)) {
+            document.documentElement.style.setProperty(name, value);
+        }
+    }
+
+    clearCustomThemeVariables() {
+        const vars = [
+            '--bg-color', '--window-bg', '--tab-bar-bg', '--omnibox-bg',
+            '--text-primary', '--text-secondary', '--accent-color', '--border-color',
+            '--logo-filter'
+        ];
+        vars.forEach(v => document.documentElement.style.removeProperty(v));
+    }
+
+    updateLogoFilterForColor(hex) {
+        const filter = this.calculateLogoFilter(hex);
+        document.documentElement.style.setProperty('--logo-filter', filter);
+    }
+
+    calculateLogoFilter(hex) {
+        // Simplified Logic: 
+        // 1. Convert hex to brightness
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+        // If the color is light, invert the black logo to make it light
+        // We use a baseline black filter then invert based on brightness
+        if (brightness > 128) {
+            return `brightness(0) saturate(100%) invert(100%)`; // Make White
+        } else {
+            return `brightness(0) saturate(100%)`; // Keep Black
+        }
+    }
+
+    rgbToHex(rgb) {
+        const result = rgb.match(/\d+/g);
+        if (!result || result.length < 3) return '#ffffff';
+        const r = parseInt(result[0]).toString(16).padStart(2, '0');
+        const g = parseInt(result[1]).toString(16).padStart(2, '0');
+        const b = parseInt(result[2]).toString(16).padStart(2, '0');
+        return `#${r}${g}${b}`;
     }
 
     updateThemeActiveState() {
