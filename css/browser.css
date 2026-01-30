@@ -648,13 +648,42 @@ iframe.browser-viewport.active {
     display: none;
 }
 
-.home-logo {
-    margin-bottom: 48px;
-    color: var(--text-primary);
+.home-branding {
+    text-align: center;
+    margin-bottom: 56px;
+    user-select: none;
+    animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.home-logo img {
-    filter: var(--logo-filter);
+.brand-title {
+    font-size: 64px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -2px;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.brand-subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 12px 0 0;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    opacity: 0.7;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .home-grid {

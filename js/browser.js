@@ -358,11 +358,12 @@ class Browser {
         const allApps = [...apps, ...customApps];
 
         let gridHtml = `
-            <div class="home-logo">
-                <img src="assets/logo.png" class="home-logo-img">
-            </div>
-            <div class="home-grid">
-        `;
+        <div class="home-branding">
+            <h1 class="brand-title">Navigator</h1>
+            <p class="brand-subtitle">by Scholar Squad</p>
+        </div>
+        <div class="home-grid">
+    `;
 
         allApps.forEach(app => {
             // Determine icon display
@@ -591,6 +592,7 @@ class Browser {
                                 setInterval(() => {
                                     try {
                                         if (this.activeTabId !== tab.id) return;
+                                        if (tab.url === 'browser://home') return;
 
                                         const rawUrl = iframeWindow.location.href;
                                         // Scramjet URLs look like domain.com/service/https://target.com

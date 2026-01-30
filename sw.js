@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v21'; // Revert Aggressive Redirect (Navigation Fix)
+const VERSION = 'v22'; // Branding Update
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -51,7 +51,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v21'; // Revert v20 + Location Hijacking
+const CACHE_NAME = 'scramjet-proxy-cache-v22'; // Final Branding Refresh
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
