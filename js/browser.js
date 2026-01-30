@@ -608,6 +608,32 @@ class Browser {
 
                                 iframeWindow.__proxyTabsOverridden = true;
                                 console.log('[BROWSER] ✅ window.open override SUCCESS');
+
+                                // INTERCEPT LINK CLICKS (to catch target="_blank")
+                                try {
+                                    const clickHandler = (e) => {
+                                        const link = e.target.closest('a');
+                                        if (link) {
+                                            const target = link.getAttribute('target');
+                                            const isNewTab = target && target.toLowerCase() === '_blank';
+                                            const isMiddleClick = e.button === 1;
+                                            const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+
+                                            if (isNewTab || isMiddleClick || isCmdOrCtrl) {
+                                                console.log('[BROWSER] ✅✅ Intercepted Link Interaction (New Tab):', link.href);
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                this.createTab(link.href);
+                                            }
+                                        }
+                                    };
+
+                                    iframeWindow.document.addEventListener('click', clickHandler, true);
+                                    iframeWindow.document.addEventListener('auxclick', clickHandler, true);
+                                    console.log('[BROWSER] ✅ Link/AuxClick interception attached');
+                                } catch (docErr) {
+                                    console.warn('[BROWSER] ⚠️ Could not attach link interception:', docErr.message);
+                                }
                             }
                         } catch (e) {
                             // Cross-origin or security errors

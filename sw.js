@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v18'; // Client-side window.open hijacking
+const VERSION = 'v19'; // Hybrid Hijack + SW Redirect
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -136,6 +136,20 @@ async function handleRequest(event) {
         // Check if this request should be proxied
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
+
+            // REDIRECT LEAKED NAVIGATIONS (New Tabs / Top-Level Leaks)
+            // fetchDest 'document' means it's a new tab or top-level navigation.
+            // isIframe 'false' means it's NOT an iframe load.
+            if (isNavigationRequest && fetchDest === 'document' && !isIframe) {
+                const ref = event.request.referrer || '';
+                // If it's not coming from our shell, it's a leaked tab
+                if (!ref.includes('index.html')) {
+                    console.log(`SW: 🔄 Leaked tab detected, redirecting to shell: ${url}`);
+                    const shellUrl = new URL('./index.html', self.location.href);
+                    shellUrl.searchParams.set('url', url);
+                    return Response.redirect(shellUrl.href, 302);
+                }
+            }
 
             // PERFORMANCE: Use cache-first strategy for static resources
             if (isStaticResource(url)) {
