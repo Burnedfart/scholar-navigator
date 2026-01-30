@@ -60,7 +60,7 @@ class Browser {
             },
             'google-classroom': {
                 title: 'Classes',
-                favicon: 'https://ssl.gstatic.com/classroom/logo_square_48.png'
+                favicon: 'https://ssl.gstatic.com/classroom/favicon.png'
             },
             'google-drive': {
                 title: 'My Drive - Google Drive',
