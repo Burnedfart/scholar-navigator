@@ -5,7 +5,7 @@ import path from "path";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import express from "express";
 
-const DOMAIN = "scholarnavigator.top";
+const DOMAIN = "navigator.scholarnavigator.workers.dev";
 let httpsOptions;
 try {
     httpsOptions = {
