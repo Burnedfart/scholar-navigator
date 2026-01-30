@@ -127,18 +127,23 @@ class Browser {
 
     async init() {
         if (window.self !== window.top) {
-            let isAboutBlankCloak = false;
+            let isAllowedFrame = false;
+
             try {
-                isAboutBlankCloak = window.parent.location.href === 'about:blank';
+                const parentUrl = window.parent.location.href;
+                // Check for the existing about:blank cloak
+                if (parentUrl === 'about:blank') {
+                    isAllowedFrame = true;
+                    console.log('[BROWSER] 🔐 Running in about:blank cloak');
+                }
             } catch (e) {
-                isAboutBlankCloak = false;
+                isAllowedFrame = true;
+                console.log('[BROWSER] 🌐 Cross-origin iframe detected (likely Google Sites) - UI allowed');
             }
 
-            if (!isAboutBlankCloak) {
-                console.warn('[BROWSER] Inception detected (running in iframe). Aborting UI initialization.');
+            if (!isAllowedFrame) {
+                console.warn('[BROWSER] Inception detected (unauthorized iframe). Aborting UI initialization.');
                 return;
-            } else {
-                console.log('[BROWSER] 🔐 Running in about:blank cloak - UI initialization allowed');
             }
         }
 
@@ -687,7 +692,7 @@ class Browser {
         let gridHtml = `
         <div class="home-branding">
             <h1 class="brand-title">Navigator</h1>
-            <p class="brand-subtitle">by Scholar Squad</p>
+            <p class="brand-subtitle">by the scholar squad</p>
         </div>
         <div class="home-grid">
     `;
