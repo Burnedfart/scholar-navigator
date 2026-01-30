@@ -176,22 +176,31 @@ class Browser {
             if (!tab) return;
             if (tab.url === 'browser://home') return;
 
+            console.log('[BROWSER] 🔙 Back button clicked. Current tab URL:', tab.url);
+
             if (tab.iframe && tab.iframe.contentWindow) {
                 try {
+                    console.log('[BROWSER] 🔙 Triggering iframe history.back()');
                     tab.iframe.contentWindow.history.back();
-                    // Immediate sync and Interstellar src-refresh
+
+                    // Delay the sync to allow the history navigation to complete
                     setTimeout(() => {
                         try {
-                            if (tab.iframe && tab.iframe.src) {
-                                tab.iframe.src = tab.iframe.src;
+                            if (tab.iframe) {
+                                console.log('[BROWSER] 🔙 Syncing UI after back... Iframe src is:', tab.iframe.src);
+                                // The src refresh might be what's causing the reload feeling. 
+                                // Let's only sync the UI first.
                                 this.syncTabWithIframe(tab);
+                                console.log('[BROWSER] 🔙 New tab URL after back:', tab.url);
                             }
                         } catch (e) { }
-                    }, 50);
+                    }, 150); // Increased timeout to 150ms
                 } catch (err) {
+                    console.error('[BROWSER] 🔙 Back navigation failed:', err);
                     this.navigate('browser://home');
                 }
             } else {
+                console.log('[BROWSER] 🔙 No iframe found, going home');
                 this.navigate('browser://home');
             }
         });
@@ -202,18 +211,25 @@ class Browser {
             e.stopImmediatePropagation();
 
             const tab = this.getActiveTab();
-            if (tab && tab.iframe && tab.iframe.contentWindow) {
+            if (!tab) return;
+
+            console.log('[BROWSER] Forward button clicked. Current tab URL:', tab.url);
+
+            if (tab.iframe && tab.iframe.contentWindow) {
                 try {
+                    console.log('[BROWSER] Triggering iframe history.forward()');
                     tab.iframe.contentWindow.history.forward();
                     setTimeout(() => {
                         try {
-                            if (tab.iframe && tab.iframe.src) {
-                                tab.iframe.src = tab.iframe.src;
+                            if (tab.iframe) {
                                 this.syncTabWithIframe(tab);
+                                console.log('[BROWSER] 🔜 New tab URL after forward:', tab.url);
                             }
                         } catch (e) { }
-                    }, 50);
-                } catch (err) { }
+                    }, 150);
+                } catch (err) {
+                    console.error('[BROWSER] 🔜 Forward navigation failed:', err);
+                }
             }
         });
 
