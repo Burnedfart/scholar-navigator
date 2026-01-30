@@ -606,19 +606,23 @@ class Browser {
                                 // Only catch target="_blank" and remove the target attribute
                                 // This prevents new native tabs while allowing normal navigation
                                 try {
-                                    iframeWindow.document.addEventListener('click', (e) => {
+                                    const handleLink = (e) => {
                                         const link = e.target.closest('a');
                                         if (link) {
                                             const target = link.getAttribute('target');
                                             if (target && target.toLowerCase() === '_blank') {
-                                                console.log('[BROWSER] 🔗 Removed target=_blank from link:', link.href);
+                                                console.log('[BROWSER] 🔗 Removed target=_blank from link (' + e.type + '):', link.href);
                                                 // Remove target so it navigates in same iframe
                                                 link.removeAttribute('target');
                                                 // Don't prevent default - let navigation proceed
                                             }
                                         }
-                                    }, { capture: true });
-                                    console.log('[BROWSER] ✅ target=_blank removal attached');
+                                    };
+
+                                    // Attach to both mousedown and click for maximum coverage
+                                    iframeWindow.document.addEventListener('mousedown', handleLink, { capture: true });
+                                    iframeWindow.document.addEventListener('click', handleLink, { capture: true });
+                                    console.log('[BROWSER] ✅ target=_blank removal attached (mousedown + click)');
                                 } catch (err) {
                                     console.warn('[BROWSER] ⚠️ Could not attach click listener:', err.message);
                                 }
