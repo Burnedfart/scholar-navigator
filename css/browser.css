@@ -704,7 +704,7 @@ iframe.browser-viewport.active {
     color: var(--text-primary);
 }
 
-/* Network Warning Banner */
+/* Network Warning Banner & Update Prompt */
 .network-warning-banner {
     position: fixed;
     bottom: 30px;
@@ -728,6 +728,55 @@ iframe.browser-viewport.active {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+#update-banner {
+    background: var(--window-bg);
+    border: 1px solid var(--accent-color);
+    color: var(--text-primary);
+}
+
+#update-banner .warning-title {
+    color: var(--accent-color);
+}
+
+#update-banner .warning-message {
+    color: var(--text-secondary);
+}
+
+.update-btn-themed {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 14px;
+    font-family: 'Segoe UI';
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 8px;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+}
+
+.update-btn-themed:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.update-btn-themed:active {
+    transform: translateY(0);
+}
+
+.rocket-icon-img {
+    width: 34px;
+    height: 34px;
+    margin-left: -9px;
+    object-fit: contain;
+    filter: var(--logo-filter);
+    flex-shrink: 0;
+}
+
 @keyframes slideUpFade {
     from {
         opacity: 0;
@@ -747,6 +796,9 @@ iframe.browser-viewport.active {
 .warning-icon {
     font-size: 28px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .warning-content {
@@ -756,19 +808,17 @@ iframe.browser-viewport.active {
 .warning-title {
     font-weight: 700;
     margin-bottom: 2px;
-    color: var(--text-primary);
 }
 
 .warning-message {
     font-size: 13px;
-    color: var(--text-secondary);
     line-height: 1.4;
 }
 
 .warning-close {
     background: rgba(0, 0, 0, 0.05);
     border: none;
-    color: #4a5568;
+    color: var(--text-secondary);
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -783,5 +833,5 @@ iframe.browser-viewport.active {
 
 .warning-close:hover {
     background: rgba(0, 0, 0, 0.1);
-    color: #2d3748;
+    color: var(--text-primary);
 }
