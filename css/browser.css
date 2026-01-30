@@ -16,13 +16,19 @@
     --danger-color: #d93025;
     --radius-lg: 12px;
     --radius-md: 8px;
-    --logo-filter: invert(1);
+    --logo-filter: brightness(0) saturate(100%) invert(10%) sepia(3%) saturate(1048%) hue-rotate(188deg) brightness(97%) contrast(92%);
 }
 
-html[data-theme="ink"],
-html[data-theme="nebula"],
+html[data-theme="ink"] {
+    --logo-filter: invert(100%) sepia(4%) saturate(738%) hue-rotate(182deg) brightness(95%) contrast(90%);
+}
+
 html[data-theme="coffee"] {
-    --logo-filter: none;
+    --logo-filter: invert(98%) sepia(10%) saturate(347%) hue-rotate(323deg) brightness(101%) contrast(92%);
+}
+
+html[data-theme="nebula"] {
+    --logo-filter: invert(90%) sepia(13%) saturate(394%) hue-rotate(213deg) brightness(101%) contrast(96%);
 }
 
 html[data-theme="ink"] {
@@ -214,11 +220,17 @@ body {
     color: var(--text-primary);
 }
 
-.app-logo-img {
+.app-logo-img,
+.home-logo-img {
     width: 24px;
     height: 24px;
     object-fit: contain;
     filter: var(--logo-filter);
+}
+
+.home-logo-img {
+    width: 80px;
+    height: 80px;
 }
 
 @keyframes spin {

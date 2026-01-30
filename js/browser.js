@@ -366,7 +366,7 @@ class Browser {
 
         let gridHtml = `
             <div class="home-logo">
-                <img src="assets/logo.png" style="width: 80px; height: 80px; object-fit: contain;">
+                <img src="assets/logo.png" class="home-logo-img">
             </div>
             <div class="home-grid">
         `;

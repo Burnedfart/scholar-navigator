@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v18'; // UI Refinement Update
+const VERSION = 'v19'; // Logo Color Fix Update
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -52,7 +52,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v18'; // UI Fix Update
+const CACHE_NAME = 'scramjet-proxy-cache-v19'; // Logo Fix Update
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
