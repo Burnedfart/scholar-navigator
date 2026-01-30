@@ -41,7 +41,7 @@
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/burnedfart/proxy.git
+   git clone https://github.com/Burnedfart/scholar-navigator.git
    ```
 2. Serve the directory using any static web server:
  
