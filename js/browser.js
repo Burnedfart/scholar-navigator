@@ -585,12 +585,21 @@ class Browser {
                                     if (url.includes('/ck/a?') || url.includes('&u=')) {
                                         try {
                                             const urlObj = new URL(url);
-                                            const u = urlObj.searchParams.get('u');
-                                            if (u) {
-                                                // Bing base64url -> real URL
-                                                url = 'https://' + atob(u.replace(/_/g, '/').replace(/-/g, '+')).substring(2);
+                                            let u = urlObj.searchParams.get('u');
+                                            if (u && u.length > 2) {
+                                                // Bing prefix is usually 2 chars (like 'a1'). Strip BEFORE decoding.
+                                                const base64 = u.substring(2).replace(/_/g, '/').replace(/-/g, '+');
+                                                const decoded = atob(base64);
+
+                                                // Basic sanity check: does it look like a URL or path?
+                                                if (decoded.includes('http') || decoded.startsWith('/')) {
+                                                    url = decoded.startsWith('http') ? decoded : 'https://' + decoded;
+                                                    console.log('[BROWSER] 🎯 Decoded Bing result:', url);
+                                                }
                                             }
-                                        } catch (err) { }
+                                        } catch (err) {
+                                            console.warn('[BROWSER] Bing decode failed:', err);
+                                        }
                                     }
 
                                     // PREVENT ESCAPES
