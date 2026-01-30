@@ -516,6 +516,7 @@ class Browser {
             return;
         }
 
+        let url = input;
         if (url === 'browser://home') {
             // Already home
         } else if (!url.startsWith('http') && !url.includes('://')) {
