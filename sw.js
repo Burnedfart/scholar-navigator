@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v20'; // Aggressive Redirect Fix
+const VERSION = 'v21'; // Revert Aggressive Redirect (Navigation Fix)
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -51,7 +51,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v20'; // Final Logo Filter Update
+const CACHE_NAME = 'scramjet-proxy-cache-v21'; // Revert v20 + Location Hijacking
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -136,20 +136,6 @@ async function handleRequest(event) {
         // Check if this request should be proxied
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
-
-            // REDIRECT LEAKED NAVIGATIONS (New Tabs / Top-Level Leaks)
-            // fetchDest 'document' means it's a new tab or top-level navigation.
-            // isIframe 'false' means it's NOT an iframe load.
-            if (isNavigationRequest && !isIframe) {
-                const ref = event.request.referrer || '';
-                // If it's not coming from our shell, it's a leaked tab
-                if (!ref.includes('index.html')) {
-                    console.log(`SW: 🔄 REDIRECTING leaked tab to shell: ${url}`);
-                    const shellUrl = new URL('./index.html', self.location.href);
-                    shellUrl.searchParams.set('url', url);
-                    return Response.redirect(shellUrl.href, 302);
-                }
-            }
 
             // PERFORMANCE: Use cache-first strategy for static resources
             if (isStaticResource(url)) {

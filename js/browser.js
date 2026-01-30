@@ -609,6 +609,93 @@ class Browser {
                                 iframeWindow.__proxyTabsOverridden = true;
                                 console.log('[BROWSER] ✅ window.open override SUCCESS');
 
+                                // HIJACK LOCATION OBJECT - Intercept location.href, location.replace, location.assign
+                                // These are what Bing's header links (Images, Videos, etc.) likely use
+                                try {
+                                    const originalLocation = iframeWindow.location;
+
+                                    // Create descriptor to trap location.href setter
+                                    const locationDescriptor = Object.getOwnPropertyDescriptor(iframeWindow, 'location');
+
+                                    // Store original methods
+                                    const originalReplace = originalLocation.replace;
+                                    const originalAssign = originalLocation.assign;
+
+                                    // Override location.replace
+                                    originalLocation.replace = function (url) {
+                                        console.log('[BROWSER] ✅✅ Intercepted location.replace:', url);
+
+                                        // Check if this should open in new tab (full URL navigation)
+                                        try {
+                                            const urlObj = new URL(url, originalLocation.href);
+                                            const currentOrigin = new URL(originalLocation.href).origin;
+
+                                            // If it's a different origin, open in new tab
+                                            if (urlObj.origin !== currentOrigin) {
+                                                this.createTab(urlObj.href);
+                                                return;
+                                            }
+                                        } catch (e) {
+                                            console.warn('[BROWSER] URL parse error in replace:', e);
+                                        }
+
+                                        // Otherwise, allow normal navigation within iframe
+                                        return originalReplace.call(originalLocation, url);
+                                    }.bind(this);
+
+                                    // Override location.assign
+                                    originalLocation.assign = function (url) {
+                                        console.log('[BROWSER] ✅✅ Intercepted location.assign:', url);
+
+                                        try {
+                                            const urlObj = new URL(url, originalLocation.href);
+                                            const currentOrigin = new URL(originalLocation.href).origin;
+
+                                            if (urlObj.origin !== currentOrigin) {
+                                                this.createTab(urlObj.href);
+                                                return;
+                                            }
+                                        } catch (e) {
+                                            console.warn('[BROWSER] URL parse error in assign:', e);
+                                        }
+
+                                        return originalAssign.call(originalLocation, url);
+                                    }.bind(this);
+
+                                    // Monitor location.href setter (more complex, needs Proxy)
+                                    // We'll use a MutationObserver to detect navigation instead
+                                    const navigationObserver = new MutationObserver(() => {
+                                        // Check if URL changed dramatically (different origin)
+                                        try {
+                                            const currentUrl = iframeWindow.location.href;
+                                            if (tab.lastObservedUrl && tab.lastObservedUrl !== currentUrl) {
+                                                const oldOrigin = new URL(tab.lastObservedUrl).origin;
+                                                const newOrigin = new URL(currentUrl).origin;
+
+                                                if (oldOrigin !== newOrigin) {
+                                                    console.log('[BROWSER] 🔍 MutationObserver detected cross-origin navigation:', currentUrl);
+                                                    // Can't prevent here, but we've already trapped the methods above
+                                                }
+                                            }
+                                            tab.lastObservedUrl = currentUrl;
+                                        } catch (e) {
+                                            // Cross-origin access blocked
+                                        }
+                                    });
+
+                                    if (iframeWindow.document.body) {
+                                        navigationObserver.observe(iframeWindow.document.body, {
+                                            childList: true,
+                                            subtree: true
+                                        });
+                                    }
+
+                                    console.log('[BROWSER] ✅ Location object hijacking SUCCESS');
+                                } catch (locErr) {
+                                    console.warn('[BROWSER] ⚠️ Could not hijack location object:', locErr.message);
+                                }
+
+
                                 // INTERCEPT ALL NAVIGATION ATTEMPTS
                                 try {
                                     const navHandler = (e) => {
