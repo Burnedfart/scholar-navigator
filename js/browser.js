@@ -1,8 +1,3 @@
-/**
- * Browser Controller
- * Manages tabs, UI state, and navigation.
- */
-
 class Browser {
     constructor() {
         this.tabs = [];
@@ -10,7 +5,6 @@ class Browser {
         this.nextTabId = 1;
         this.maxTabs = 10;
 
-        // Blocked Domains (Base64 Encoded for basic obfuscation)
         this.blockedKeywords = ["cG9ybg==", "eHh4", "YWR1bHQ=", "c2V4"];
 
         // DOM Elements
@@ -19,7 +13,7 @@ class Browser {
         this.omnibox = document.getElementById('omnibox-input');
         this.newTabBtn = document.getElementById('new-tab-btn');
         this.proxyStatus = document.getElementById('proxy-status');
-        this.logo = document.querySelector('.logo-container img'); // Select the image directly
+        this.logo = document.querySelector('.logo-container img');
 
         // Modal Elements
         this.modal = document.getElementById('custom-app-modal');
@@ -122,33 +116,26 @@ class Browser {
     }
 
     async init() {
-        // INCEPTION GUARD: Never load the browser UI inside an iframe
-        // EXCEPT: Allow if parent is about:blank (our intentional cloak)
         if (window.self !== window.top) {
             let isAboutBlankCloak = false;
             try {
                 isAboutBlankCloak = window.parent.location.href === 'about:blank';
             } catch (e) {
-                // Cross-origin error means it's not our cloak
                 isAboutBlankCloak = false;
             }
 
             if (!isAboutBlankCloak) {
                 console.warn('[BROWSER] Inception detected (running in iframe). Aborting UI initialization.');
-                // proxy-init.js already aborted initialization, just return silently
                 return;
             } else {
                 console.log('[BROWSER] 🔐 Running in about:blank cloak - UI initialization allowed');
             }
         }
 
-        // HISTORY ANCHOR: Prevent accidental exits when clicking back
-        // This ensures that even if history.back() bubbles, it just consumes our dummy state
         window.history.pushState({ anchor: true }, '');
         window.addEventListener('popstate', (e) => {
             console.log('[BROWSER] 🛡️ Popstate detected in shell! State:', e.state);
             if (e.state && e.state.anchor) return;
-            // Re-anchor if we navigated out
             window.history.pushState({ anchor: true }, '');
         });
 
@@ -157,20 +144,16 @@ class Browser {
         this.loadTheme();
         this.loadDisguise();
         this.updateProxyStatus('loading');
-
-        // Check if Auto-Cloak is enabled
         if (localStorage.getItem('ab') === 'true') {
             this.openCloaked();
         }
 
-        // Check for URL in query parameters
         const params = new URLSearchParams(window.location.search);
         const urlToOpen = params.get('url');
 
         if (urlToOpen && urlToOpen !== 'browser://home') {
             const decodedUrl = decodeURIComponent(urlToOpen);
 
-            // Clean up the address bar
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
 
@@ -186,8 +169,6 @@ class Browser {
         } catch (e) {
             console.error('[BROWSER] Proxy initialization error:', e);
             this.updateProxyStatus('error');
-            // Don't show alert - the error handler will show proper recovery UI if needed
-            // This prevents false positives during SW updates
         }
     }
 
@@ -216,11 +197,6 @@ class Browser {
         // Intercept new window requests from Scramjet or the Service Worker
         window.addEventListener('message', (e) => {
             if (!e.data) return;
-
-            // Handle various "open" message formats
-            // 1. Service Worker or internal redirect: { type: 'proxy:open', url: '...' }
-            // 2. Scramjet 2.x: { type: 'scramjet:open', url: '...' }
-            // 3. Nested Scramjet: { scramjet: { type: 'open', url: '...' } }
 
             let url = null;
             if (e.data.type === 'proxy:open') {
@@ -562,8 +538,6 @@ class Browser {
         const b = parseInt(hex.slice(5, 7), 16);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
-        // If the color is light, invert the black logo to make it light
-        // We use a baseline black filter then invert based on brightness
         if (brightness > 128) {
             return `brightness(0) saturate(100%) invert(100%)`; // Make White
         } else {

@@ -1,8 +1,3 @@
-/**
- * WebSocket Health Checker
- * Tests WebSocket connectivity and provides fallback strategies
- */
-
 window.WispHealthChecker = {
     lastCheckTime: null,
     isHealthy: null,

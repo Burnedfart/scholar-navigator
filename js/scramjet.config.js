@@ -1,6 +1,4 @@
-// Scramjet Configuration wrapper to handle GitHub Pages subdirectories
 (function () {
-    // Dynamic base path detection that works in both window and service worker contexts
     const pathname = self.location.pathname;
     let rootPath;
 
@@ -27,14 +25,10 @@
     }
 
     self.__scramjet$config = {
-        // Dynamic prefix that includes the repo name if present
         prefix: rootPath + 'service/',
 
-        // IMPORTANT: Direct Bare server connection (no BareMux)
-        // This tells Scramjet to connect directly to the Bare server
         bare: 'https://navigator.scholarnavigator.workers.dev/bare/',
 
-        // Use the directory where the files are hosted (CDN)
         directory: 'https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/',
 
         // Codec for encoding URLs

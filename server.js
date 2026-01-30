@@ -5,7 +5,6 @@ import path from "path";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import express from "express";
 
-// Load SSL certificates (certbot standard locations)
 const DOMAIN = "navigator.scholarnavigator.workers.dev";
 let httpsOptions;
 try {
@@ -20,12 +19,10 @@ try {
     process.exit(1);
 }
 
-// Get paths for serving static files
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const app = express();
 
-// WISP Configuration
 logging.set_level(logging.DEBUG);
 Object.assign(wisp.options, {
     allow_udp_streams: false,
@@ -59,7 +56,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Health check endpoint
+// Health check 
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -69,7 +66,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Serve static files from root
+// Serve static files
 app.use(express.static(__dirname, {
     setHeaders: (res, path) => {
         if (path.endsWith('.js') || path.endsWith('.wasm') || path.endsWith('.mjs')) {
@@ -103,7 +100,6 @@ server.on("upgrade", (req, socket, head) => {
     }
 });
 
-// Graceful shutdown
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
@@ -115,7 +111,7 @@ function shutdown() {
     });
 }
 
-// Start server
+// Start
 const PORT = parseInt(process.env.PORT || "3000");
 const HOST = "0.0.0.0";
 

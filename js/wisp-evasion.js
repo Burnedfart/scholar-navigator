@@ -1,23 +1,9 @@
-/**
- * Advanced WebSocket Evasion Techniques
- * Implements various methods to bypass DPI and censorship
- */
-
 window.WispEvasion = {
-    /**
-     * Create a WebSocket connection with custom headers to evade DPI
-     * Some censorship systems look for specific WebSocket upgrade patterns
-     */
     createStealthSocket(url, options = {}) {
         console.log('🥷 [EVASION] Creating stealth WebSocket connection');
 
-        // Standard WebSocket creation (browsers handle the upgrade)
-        // Note: In browsers, we cannot modify upgrade headers directly due to security
-        // The best we can do is ensure we're using wss:// (encrypted) and standard ports
-
         const ws = new WebSocket(url, options.protocols);
 
-        // Add connection state tracking
         ws.addEventListener('open', () => {
             console.log('✅ [EVASION] Stealth connection established');
         });
@@ -29,10 +15,6 @@ window.WispEvasion = {
         return ws;
     },
 
-    /**
-     * Attempt connection with exponential backoff
-     * Useful when connections are intermittently blocked
-     */
     async connectWithRetry(createConnectionFn, maxRetries = 3, baseDelay = 1000) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -53,10 +35,6 @@ window.WispEvasion = {
         }
     },
 
-    /**
-     * Test multiple endpoint variations
-     * Some censorship systems block specific paths but not others
-     */
     async findWorkingEndpoint(baseUrl, pathVariations = ['/wisp/', '/ws/', '/websocket/', '/']) {
         console.log('🔍 [EVASION] Testing endpoint variations...');
 
@@ -80,17 +58,10 @@ window.WispEvasion = {
         return null;
     },
 
-    /**
-     * Check if using HTTPS/WSS
-     * Unencrypted WebSocket is easily detected and blocked
-     */
     isSecureConnection(url) {
         return url.startsWith('wss://') || url.startsWith('https://');
     },
 
-    /**
-     * Recommendations for bypass
-     */
     getBypassRecommendations() {
         return {
             network: [

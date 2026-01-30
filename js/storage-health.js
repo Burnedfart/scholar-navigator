@@ -179,17 +179,12 @@ window.StorageHealth = {
 
             console.log('✅ [STORAGE] Service workers unregistered');
 
-            // Wait for browsers to process unregistration
             await new Promise(r => setTimeout(r, 300));
         } catch (e) {
             console.warn('⚠️ [STORAGE] SW unregister failed:', e);
         }
     },
 
-    /**
-     * Comprehensive storage reset
-     * Clears IndexedDB, caches, and service workers
-     */
     async performFullReset() {
         console.log('🔄 [STORAGE] Starting full storage reset...');
 
@@ -197,7 +192,6 @@ window.StorageHealth = {
         await this.unregisterServiceWorkers();
         await this.deleteScramjetDB();
 
-        // Also clear localStorage state
         try {
             sessionStorage.removeItem('coi_reloaded');
             localStorage.removeItem('proxy_init_failed');
@@ -206,24 +200,18 @@ window.StorageHealth = {
         console.log('✅ [STORAGE] Full reset complete');
     },
 
-    /**
-     * Pre-flight health check
-     * Returns: { healthy: boolean, issues: string[], autoFixed: boolean }
-     */
     async performHealthCheck() {
         console.log('🔍 [STORAGE] Running pre-flight health check...');
 
         const issues = [];
         let autoFixed = false;
 
-        // Check IndexedDB availability
         const idbAvailable = await this.isIndexedDBAvailable();
         if (!idbAvailable) {
             issues.push('IndexedDB not available or blocked');
             return { healthy: false, issues, autoFixed: false };
         }
 
-        // Check Scramjet DB schema
         const dbStatus = await this.validateScramjetDB();
 
         if (!dbStatus.valid) {

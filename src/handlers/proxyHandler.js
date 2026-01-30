@@ -1,64 +1,25 @@
-/**
- * Proxy Handler Module
- * 
- * EDUCATIONAL PURPOSE:
- * This is the core module that handles the actual proxying of requests.
- * It demonstrates:
- * - HTTP request forwarding
- * - Response processing
- * - Header manipulation
- * - Content transformation
- * 
- * HOW PROXYING WORKS:
- * 
- * 1. Client sends request to our proxy with target URL
- * 2. Proxy validates and decodes the target URL
- * 3. Proxy makes a new request to the target server
- * 4. Target server sends response to proxy
- * 5. Proxy processes/transforms the response
- * 6. Proxy sends the processed response to the client
- * 
- * This is a "forward proxy" - it forwards requests on behalf of clients.
- * Compare to a "reverse proxy" which sits in front of servers.
- */
-
 const fetch = require('node-fetch');
 const { decodeUrl, isValidUrl, extractDomain } = require('../utils/urlEncoder');
 const { InvalidUrlError, NetworkError, ContentError } = require('../middleware/errorHandler');
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
 const PROXY_CONFIG = {
-    // Maximum time to wait for target server response (milliseconds)
     timeout: 30000,
+    maxResponseSize: 10 * 1024 * 1024,
+    userAgent: 'ScholarNavigator/1.0',
 
-    // Maximum response size to prevent memory issues (bytes)
-    maxResponseSize: 10 * 1024 * 1024, // 10MB
-
-    // User agent to identify as (important for some websites)
-    userAgent: 'PracticeProblems/1.0 (Educational Tool)',
-
-    // Headers to forward from client to target
     forwardHeaders: [
         'accept',
         'accept-language',
         'accept-encoding'
     ],
 
-    // Headers to remove from target response
     stripHeaders: [
-        'x-frame-options',      // Allows embedding in iframe
+        'x-frame-options',
         'content-security-policy',
         'x-content-type-options',
         'strict-transport-security'
     ]
 };
-
-// ============================================================================
-// PROXY FUNCTIONS
-// ============================================================================
 
 /**
  * Main proxy request handler
@@ -70,9 +31,6 @@ const PROXY_CONFIG = {
  */
 async function handleProxyRequest(req, res, next) {
     try {
-        // ========================================
-        // STEP 1: Extract and validate the target URL
-        // ========================================
 
         // Get URL from query parameter (GET) or body (POST)
         let targetUrl = req.query.url || req.body.url;
@@ -155,11 +113,6 @@ async function handleProxyRequest(req, res, next) {
             processedContent = transformHtml(responseBody, finalUrl, proxyBase);
         }
 
-        // ========================================
-        // STEP 7: Build and send the response
-        // ========================================
-
-        // Build response headers
         const responseHeaders = buildResponseHeaders(targetResponse);
 
         res.json({
@@ -178,34 +131,19 @@ async function handleProxyRequest(req, res, next) {
         });
 
     } catch (error) {
-        // Handle fetch errors specifically
         if (error.name === 'FetchError' || error.code) {
             return next(new NetworkError(error, req.query.url || req.body.url));
         }
-
-        // Pass other errors to error handler
         next(error);
     }
 }
 
-/**
- * Builds headers to send to the target server
- * 
- * EDUCATIONAL NOTE:
- * Not all client headers should be forwarded:
- * - Some reveal proxy infrastructure
- * - Some contain authentication meant for the proxy
- * - Some might confuse the target server
- */
 function buildProxyHeaders(req) {
     const headers = {
         'User-Agent': PROXY_CONFIG.userAgent,
-        // Some servers require an Accept header
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5'
     };
-
-    // Forward selected headers from the original request
     PROXY_CONFIG.forwardHeaders.forEach(headerName => {
         const value = req.get(headerName);
         if (value) {
@@ -216,15 +154,10 @@ function buildProxyHeaders(req) {
     return headers;
 }
 
-/**
- * Builds response headers to send back to the client
- * Strips headers that would prevent embedding or cause issues
- */
 function buildResponseHeaders(targetResponse) {
     const headers = {};
 
     targetResponse.headers.forEach((value, name) => {
-        // Skip headers we want to strip
         if (PROXY_CONFIG.stripHeaders.includes(name.toLowerCase())) {
             return;
         }
@@ -235,9 +168,6 @@ function buildResponseHeaders(targetResponse) {
     return headers;
 }
 
-/**
- * Checks if the content type is something we can process
- */
 function isProcessableContent(contentType) {
     const processableTypes = [
         'text/html',
@@ -257,19 +187,14 @@ function isProcessableContent(contentType) {
     return processableTypes.some(type => contentType.includes(type));
 }
 
-/**
- * Resolves a URL relative to a base URL
- */
 function resolveUrl(url, baseUrl) {
     try {
-        // Handle protocol-relative URLs
         if (url.startsWith('//')) {
             return 'https:' + url;
         }
-        // Handle data URLs, javascript:, mailto:, etc.
         if (url.startsWith('data:') || url.startsWith('javascript:') ||
             url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('#')) {
-            return null; // Don't proxy these
+            return null;
         }
         return new URL(url, baseUrl).href;
     } catch (e) {
@@ -277,25 +202,13 @@ function resolveUrl(url, baseUrl) {
     }
 }
 
-/**
- * Creates a proxy URL for a given resource URL
- * Uses /api/resource which serves raw content (not JSON-wrapped)
- */
 function makeProxyUrl(resourceUrl, proxyBase) {
     if (!resourceUrl) return null;
     return `${proxyBase}/api/resource?url=${encodeURIComponent(resourceUrl)}`;
 }
 
-/**
- * Transforms HTML content for display through the proxy
- * Rewrites all resource URLs to go through the proxy
- */
 function transformHtml(html, baseUrl, proxyBase = '') {
-    // First add a base tag for any URLs we miss
     const baseTag = `<base href="${baseUrl}">`;
-
-    // Rewrite src and href attributes to go through proxy
-    // Match src="..." or href="..." or src='...' or href='...'
     const attributePatterns = [
         { attr: 'src', regex: /(<[^>]+\ssrc=["'])([^"']+)(["'][^>]*>)/gi },
         { attr: 'href', regex: /(<[^>]+\shref=["'])([^"']+)(["'][^>]*>)/gi },

@@ -1,14 +1,3 @@
-/**
- * Practice Problems Styles
- * 
- * A modern, dark-themed interface for exploring web architecture.
- */
-
-/* ============================================================================
-   CSS CUSTOM PROPERTIES (Variables)
-   Using CSS variables allows easy theming and consistent values
-   ============================================================================ */
-
 :root {
     /* Color Palette - Modern dark theme */
     --color-bg-primary: #0f0f14;
@@ -73,10 +62,6 @@
     --transition-slow: 350ms ease;
 }
 
-/* ============================================================================
-   BASE STYLES
-   ============================================================================ */
-
 *,
 *::before,
 *::after {
@@ -99,19 +84,11 @@ body {
     min-height: 100vh;
 }
 
-/* ============================================================================
-   APP CONTAINER
-   ============================================================================ */
-
 .app-container {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
-
-/* ============================================================================
-   HEADER
-   ============================================================================ */
 
 .header {
     background: var(--color-bg-secondary);

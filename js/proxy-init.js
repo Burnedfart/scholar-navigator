@@ -1,8 +1,3 @@
-/**
- * Proxy Initialization Service
- * Handles Service Worker registration, COOP/COEP isolation, and Scramjet/BareMux setup.
- */
-
 window.ProxyService = {
     initialized: false,
     ready: null, // Promise

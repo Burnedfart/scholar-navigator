@@ -50,8 +50,7 @@ if (!scramjetBundle) {
     console.error('SW: ❌ Scramjet bundle not found! __scramjet$bundle is undefined.');
 }
 
-// Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v26'; // Theme Editor Refresh
+const CACHE_NAME = 'scramjet-proxy-cache-v26';
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,
@@ -63,31 +62,24 @@ const STATIC_CACHE_PATTERNS = [
     /\.wasm$/,
 ];
 
-// Check if URL matches static resource patterns
 function isStaticResource(url) {
     return STATIC_CACHE_PATTERNS.some(pattern => pattern.test(url));
 }
 
-// Strip headers that prevent embedding and restrict content
-// Critical for sites like Coolmathgames to work in iframe
 function stripRestrictiveHeaders(headers) {
     const newHeaders = new Headers(headers);
 
-    // CSP headers - these are the main culprits for blocking content
     newHeaders.delete('Content-Security-Policy');
     newHeaders.delete('Content-Security-Policy-Report-Only');
 
-    // Frame-related headers - prevent iframe embedding
     newHeaders.delete('X-Frame-Options');
     newHeaders.delete('Frame-Options');
 
-    // Additional restrictive headers
-    newHeaders.delete('X-Content-Type-Options'); // Can interfere with resource loading
+    newHeaders.delete('X-Content-Type-Options');
 
     return newHeaders;
 }
 
-// PERFORMANCE: Load config ONCE at startup, not on every request
 async function ensureConfigLoaded() {
     if (!scramjetConfigLoaded && scramjet) {
         try {
@@ -100,9 +92,6 @@ async function ensureConfigLoaded() {
     }
 }
 
-// DON'T load config immediately - wait for main page to initialize database first
-// ensureConfigLoaded(); // REMOVED - causes race condition
-
 async function handleRequest(event) {
     const url = event.request.url;
     const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document';
@@ -111,9 +100,6 @@ async function handleRequest(event) {
 
     // If scramjet hasn't been initialized yet, pass through all requests
     if (!scramjet || !scramjetConfigLoaded) {
-        // CRITICAL: Check if this is a URL that SHOULD be proxied.
-        // On GitHub Pages, proxied URLs start with our origin but contain '/service/'
-        // We look for '/service/' and 'http' to be extra sure (handles encoded strings too)
         const isProxied = url.includes('/service/') && (url.includes('http%3A') || url.includes('http:'));
         const isExternal = url.startsWith('http') && !url.startsWith(self.location.origin);
 
@@ -134,16 +120,13 @@ async function handleRequest(event) {
         return fetch(event.request);
     }
     try {
-        // EXCLUDE internal scramjet library files from being proxied (prevents recursion/binary corruption)
         if (url.includes('/lib/scramjet/') || url.includes('scramjet.wasm')) {
             return fetch(event.request);
         }
 
-        // Check if this request should be proxied
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
 
-            // PERFORMANCE: Use cache-first strategy for static resources
             if (isStaticResource(url)) {
                 const cache = await caches.open(CACHE_NAME);
                 const cachedResponse = await cache.match(event.request);
@@ -152,10 +135,8 @@ async function handleRequest(event) {
 
             const response = await scramjet.fetch(event);
 
-            // Strip restrictive headers from proxied content
             let newHeaders = stripRestrictiveHeaders(response.headers);
 
-            // PERFORMANCE: Only inject COOP/COEP on navigation requests
             if (isNavigationRequest) {
                 if (isIframe) {
                     newHeaders.delete("Cross-Origin-Embedder-Policy");

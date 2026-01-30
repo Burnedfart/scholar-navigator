@@ -1,42 +1,55 @@
-# Practice Problems Platform <!-- Last Updated: 2026-01-26 01:28 -->
+# 🧭 Navigator
 
-A modern, educational platform for students and developers to explore web architecture, URL encoding, session management, and content retrieval.
+**Navigator** is a high-performance, feature-rich web proxy browser designed for speed, privacy, and customization. Built on top of the **Scramjet** engine and **BareMux** transport, Navigator provides a seamless "browser-within-a-browser" experience with advanced cloaking features.
 
-## 📚 Overview
+## 🌟 Key Features
 
-Practice Problems is designed as a learning tool to demonstrate how web requests flow through intermediary systems. It provides a clean, professional interface for fetching and inspecting educational content from across the web.
+### 🚀 Powerful Proxying
+- **Scramjet Engine**: Optimized for modern web compatibility and speed.
+- **BareMux Transport**: Flexible transport layer supporting WISP and other protocols.
+- **Service Worker Driven**: Operates entirely within your browser for a smooth, app-like experience.
 
-## 🚀 Key Features
+### 🍱 Desktop-Class UI
+- **Dynamic Tab System**: Manage multiple proxied sessions simultaneously.
+- **Modern Navigation**: Fully functional Back, Forward, Refresh, and Home controls.
+- **Interactive Omnibox**: Smart address bar with real-time URL syncing and search capabilities.
+- **Pinned Apps**: Quick access to your favorite sites from the custom home screen.
 
-- **Interactive Fetcher**: Retrieve and render web content in a sandboxed environment.
-- **Protocol Inspection**: View response metadata, status codes, and headers.
-- **Source Viewer**: Inspect the raw HTML/CSS/JS of retrieved content.
-- **Secure Architecture**: Demonstrates URL encoding and safe request forwarding.
-- **Responsive Design**: Fully functional on mobile and desktop devices.
+### 🎨 Personalization
+- **Theme System**: Choose from presets like *Cloud*, *Ink*, *Coffee*, and *Nebula*.
+- **Live Theme Editor**: Create your own custom color palettes with real-time previews.
+- **Logo Filters**: Intelligent logo recoloring to match your chosen theme.
 
-## 📁 Technical Architecture
+### 🎭 Stealth & Security
+- **about:blank Cloaking**: Launch the proxy inside a hidden `about:blank` window to prevent history tracking.
+- **Tab Disguiser**: Instantly mask your tab title and favicon as "Google Classroom," "Google Drive," "Wikipedia," and more.
+- **Panic Redirection**: Quickly redirect the original tab to a safe URL when entering cloak mode.
+- **Inception Protection**: Safeguards against redundant proxy loops and unauthorized embedding.
 
-- **Backend**: Node.js with Express, handling request routing and proxying.
-- **Frontend**: Vanilla JavaScript with a modern, dark-themed CSS architecture.
-- **Security**: URL-safe Base64 encoding for request transmission.
-- **Sessions**: In-memory session tracking for educational analysis.
+## 🛠️ Technology Stack
+- **Frontend**: HTML5, Vanilla CSS3 (Custom Variables), ES6+ JavaScript.
+- **Core Engine**: Scramjet v2 (Alpha).
+- **Transport**: BareMux & WISP.
+- **Security**: Service Workers, COOP/COEP Isolation.
 
-## 🛠️ Installation & Setup
+## 🚀 Getting Started
 
-```bash
-# Install dependencies
-npm install
+### Prerequisites
+- A modern Chromium-based browser (Chrome, Edge, Brave).
+- A running WISP server (configured in `js/proxy-init.js`).
 
-# Run locally
-npm run dev
-```
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/burnedfart/proxy.git
+   ```
+2. Serve the directory using any static web server:
+ 
+3. Open the provided local URL in your browser.
 
-The server will start at `http://localhost:3000`.
-
-## 📖 Educational Purpose
-
-Every file in this project includes detailed comments explaining the underlying web protocols and architectural decisions. It is intended for researchers and students learning about network flow and server-side request handling.
+## ⚙️ Configuration
+- **WISP Server**: Update the `wispUrl` in `js/proxy-init.js` to point to your backend.
+- **Disguises**: Customize preset disguises in the `Browser` class within `js/browser.js`.
 
 ---
-
-*Built for exploration. Learn responsibly.*
+*Disclaimer: This project is for educational purposes. Please use responsibly and respect the terms of service of the websites you visit.*

@@ -1,51 +1,14 @@
-/**
- * Error Handling Module
- * 
- * EDUCATIONAL PURPOSE:
- * This module demonstrates comprehensive error handling for web applications.
- * 
- * ERROR HANDLING PRINCIPLES:
- * 
- * 1. Categorization - Different error types need different responses
- *    - Client errors (4xx) - Bad requests, not found, unauthorized
- *    - Server errors (5xx) - Internal errors, service unavailable
- *    - Network errors - DNS failures, timeouts, connection refused
- * 
- * 2. User-Friendly Messages - Technical details confuse users
- *    Provide clear, actionable messages that help users understand what happened
- * 
- * 3. Logging - Record errors for debugging
- *    Include stack traces, request details, and context
- * 
- * 4. Security - Don't expose sensitive information
- *    Never show stack traces or internal paths to end users in production
- */
-
-// ============================================================================
-// ERROR TYPES
-// Custom error classes for different scenarios
-// ============================================================================
-
-/**
- * Base class for application errors
- * Extends the built-in Error class with additional properties
- */
 class AppError extends Error {
     constructor(message, statusCode, errorCode, details = null) {
         super(message);
         this.statusCode = statusCode;
         this.errorCode = errorCode;
         this.details = details;
-        this.isOperational = true; // Distinguishes from programming errors
+        this.isOperational = true;
 
-        // Captures the stack trace (V8 specific)
         Error.captureStackTrace(this, this.constructor);
     }
 }
-
-/**
- * Error for invalid URLs
- */
 class InvalidUrlError extends AppError {
     constructor(url) {
         super(
@@ -64,10 +27,6 @@ class InvalidUrlError extends AppError {
         );
     }
 }
-
-/**
- * Error for network failures when fetching target URLs
- */
 class NetworkError extends AppError {
     constructor(originalError, targetUrl) {
         const errorInfo = NetworkError.analyzeError(originalError);
@@ -85,13 +44,9 @@ class NetworkError extends AppError {
         );
     }
 
-    /**
-     * Analyzes the original error to provide helpful context
-     */
     static analyzeError(error) {
         const errorCode = error.code || error.message;
 
-        // Map common network errors to user-friendly explanations
         const errorMappings = {
             'ENOTFOUND': {
                 message: 'The website could not be found',
@@ -143,7 +98,6 @@ class NetworkError extends AppError {
             }
         };
 
-        // Find matching error or use default
         const mapping = errorMappings[errorCode] || {
             message: 'Unable to connect to the website',
             code: 'NETWORK_ERROR',
@@ -159,9 +113,6 @@ class NetworkError extends AppError {
     }
 }
 
-/**
- * Error for content that cannot be processed
- */
 class ContentError extends AppError {
     constructor(contentType, reason) {
         super(
@@ -180,9 +131,6 @@ class ContentError extends AppError {
     }
 }
 
-/**
- * Error for rate limiting
- */
 class RateLimitError extends AppError {
     constructor(retryAfter) {
         super(
@@ -201,24 +149,13 @@ class RateLimitError extends AppError {
     }
 }
 
-// ============================================================================
-// EXPRESS ERROR MIDDLEWARE
-// ============================================================================
 
-/**
- * Express error handling middleware
- * 
- * IMPORTANT: Error middleware must have 4 parameters (err, req, res, next)
- * Express identifies error handlers by their function signature
- */
 function middleware(err, req, res, next) {
-    // Default values
     let statusCode = err.statusCode || 500;
     let errorCode = err.errorCode || 'INTERNAL_ERROR';
     let message = err.message || 'An unexpected error occurred';
     let details = err.details || null;
 
-    // Log the error for debugging
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error(`[Error] ${new Date().toISOString()}`);
     console.error(`Code: ${errorCode}`);
@@ -226,14 +163,12 @@ function middleware(err, req, res, next) {
     console.error(`Path: ${req.method} ${req.originalUrl}`);
     console.error(`Session: ${req.sessionId}`);
 
-    // Only log stack trace for non-operational errors (bugs)
     if (!err.isOperational) {
         console.error('Stack:', err.stack);
     }
 
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    // Build the error response
     const errorResponse = {
         success: false,
         error: {
@@ -243,17 +178,13 @@ function middleware(err, req, res, next) {
         }
     };
 
-    // Include details if available
     if (details) {
         errorResponse.error.details = details;
     }
-
-    // In development, include more technical information
     if (process.env.NODE_ENV === 'development' && err.stack) {
         errorResponse.error.stack = err.stack.split('\n');
     }
 
-    // If headers are already sent, delegate to default Express error handler
     if (res.headersSent) {
         return next(err);
     }
@@ -261,18 +192,6 @@ function middleware(err, req, res, next) {
     res.status(statusCode).json(errorResponse);
 }
 
-/**
- * Wraps async route handlers to catch errors
- * 
- * EDUCATIONAL NOTE:
- * Express doesn't automatically catch errors in async functions.
- * This wrapper ensures async errors are passed to the error middleware.
- * 
- * Usage:
- *   app.get('/route', asyncHandler(async (req, res) => {
- *       // async code here
- *   }));
- */
 function asyncHandler(fn) {
     return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next);

@@ -1,26 +1,4 @@
 /**
- * URL Encoding Utilities
- * 
- * EDUCATIONAL PURPOSE:
- * This module demonstrates various URL encoding techniques used in web development.
- * URL encoding is essential for:
- * - Safely transmitting URLs through query parameters
- * - Handling special characters that have meaning in URLs
- * - Preventing injection attacks
- * 
- * ENCODING METHODS EXPLAINED:
- * 
- * 1. encodeURIComponent() - Encodes special URL characters (built into JavaScript)
- *    Example: "hello world" → "hello%20world"
- *    
- * 2. Base64 encoding - Converts binary data to ASCII text
- *    Example: "https://example.com" → "aHR0cHM6Ly9leGFtcGxlLmNvbQ=="
- *    
- * 3. URL-safe Base64 - Modified Base64 that's safe for URLs
- *    Replaces '+' with '-' and '/' with '_'
- */
-
-/**
  * Encodes a URL using URL-safe Base64 encoding
  * 
  * Why Base64?
