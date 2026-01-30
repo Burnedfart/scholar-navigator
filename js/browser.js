@@ -182,15 +182,22 @@ class Browser {
 
             if (tab.iframe && tab.iframe.contentWindow) {
                 try {
-                    const hLen = tab.iframe.contentWindow.history.length;
-                    console.log(`[NAVIGATOR] 🔙 Back Request. History Length: ${hLen}, UI URL: ${tab.url}`);
+                    const oldUrl = tab.url;
+                    console.log('[NAVIGATOR] 🔙 Back Request. URL:', oldUrl);
 
-                    tab.iframe.contentWindow.history.back();
+                    if (tab.scramjetWrapper && typeof tab.scramjetWrapper.back === 'function') {
+                        tab.scramjetWrapper.back();
+                    } else {
+                        tab.iframe.contentWindow.history.back();
+                    }
 
                     // Sync UI after a longer delay to ensure the back navigation has committed
                     setTimeout(() => {
                         this.syncTabWithIframe(tab);
-                        console.log('[NAVIGATOR] 🔙 Background Sync Result:', tab.url);
+                        if (tab.url === oldUrl) {
+                            console.log('[NAVIGATOR] 🔙 History exhausted. Returning Home.');
+                            this.navigate('browser://home');
+                        }
                     }, 500);
                 } catch (err) {
                     console.error('[NAVIGATOR] 🔙 Execution Error:', err);
@@ -215,8 +222,12 @@ class Browser {
 
             if (tab.iframe && tab.iframe.contentWindow) {
                 try {
-                    console.log('[NAVIGATOR] 🔜 Forwarding internal history...');
-                    tab.iframe.contentWindow.history.forward();
+                    console.log('[NAVIGATOR] 🔜 Forward Request.');
+                    if (tab.scramjetWrapper && typeof tab.scramjetWrapper.forward === 'function') {
+                        tab.scramjetWrapper.forward();
+                    } else {
+                        tab.iframe.contentWindow.history.forward();
+                    }
 
                     setTimeout(() => {
                         this.syncTabWithIframe(tab);
