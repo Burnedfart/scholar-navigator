@@ -53,15 +53,15 @@ class Browser {
                 favicon: 'assets/logo.png'
             },
             'google-classroom': {
-                title: 'Classes',
+                title: 'Home - Classroom',
                 favicon: 'https://ssl.gstatic.com/classroom/favicon.png'
             },
             'google-drive': {
-                title: 'My Drive - Google Drive',
+                title: 'Home - Google Drive',
                 favicon: 'https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png'
             },
             'wikipedia': {
-                title: 'Wikipedia, the free encyclopedia',
+                title: 'Wikipedia',
                 favicon: 'https://en.wikipedia.org/static/favicon/wikipedia.ico'
             },
             'google-docs': {
@@ -69,7 +69,7 @@ class Browser {
                 favicon: 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'
             },
             'gmail': {
-                title: 'Gmail',
+                title: 'Inbox (24)',
                 favicon: 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico'
             }
         };
