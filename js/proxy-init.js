@@ -11,13 +11,26 @@ window.ProxyService = {
 window.ProxyService.ready = new Promise(async (resolve, reject) => {
     try {
         // INCEPTION GUARD: Don't initialize proxy in Scramjet-created iframes
+        // EXCEPT: Allow if parent is about:blank (our intentional cloak)
         const isInIframe = window.self !== window.top;
         if (isInIframe) {
-            console.log('🖼️ [PROXY] Inception detected - running in iframe. Skipping initialization.');
-            // Mark as "initialized" to prevent errors in browser.js
-            window.ProxyService.initialized = true;
-            resolve(true);
-            return; // CRITICAL: Stop all initialization
+            let isAboutBlankCloak = false;
+            try {
+                isAboutBlankCloak = window.parent.location.href === 'about:blank';
+            } catch (e) {
+                // Cross-origin error means it's not our cloak
+                isAboutBlankCloak = false;
+            }
+
+            if (!isAboutBlankCloak) {
+                console.log('🖼️ [PROXY] Inception detected - running in iframe. Skipping initialization.');
+                // Mark as "initialized" to prevent errors in browser.js
+                window.ProxyService.initialized = true;
+                resolve(true);
+                return; // CRITICAL: Stop all initialization
+            } else {
+                console.log('🔐 [PROXY] Running in about:blank cloak - initialization allowed');
+            }
         }
 
         // Signal to error handler that initialization has started

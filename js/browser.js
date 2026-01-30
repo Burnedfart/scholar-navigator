@@ -123,10 +123,23 @@ class Browser {
 
     async init() {
         // INCEPTION GUARD: Never load the browser UI inside an iframe
+        // EXCEPT: Allow if parent is about:blank (our intentional cloak)
         if (window.self !== window.top) {
-            console.warn('[BROWSER] Inception detected (running in iframe). Aborting UI initialization.');
-            // proxy-init.js already aborted initialization, just return silently
-            return;
+            let isAboutBlankCloak = false;
+            try {
+                isAboutBlankCloak = window.parent.location.href === 'about:blank';
+            } catch (e) {
+                // Cross-origin error means it's not our cloak
+                isAboutBlankCloak = false;
+            }
+
+            if (!isAboutBlankCloak) {
+                console.warn('[BROWSER] Inception detected (running in iframe). Aborting UI initialization.');
+                // proxy-init.js already aborted initialization, just return silently
+                return;
+            } else {
+                console.log('[BROWSER] 🔐 Running in about:blank cloak - UI initialization allowed');
+            }
         }
 
         // HISTORY ANCHOR: Prevent accidental exits when clicking back
