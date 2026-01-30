@@ -69,6 +69,10 @@ app.get('/api/health', (req, res) => {
 // Serve static files
 app.use(express.static(__dirname, {
     setHeaders: (res, path) => {
+        // [FIX] Enable Cross-Origin Isolation for libcurl transport
+        res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+        res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+
         if (path.endsWith('.js') || path.endsWith('.wasm') || path.endsWith('.mjs')) {
             res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         }
@@ -78,6 +82,9 @@ app.use(express.static(__dirname, {
 // Serve 'lib' directory for static assets
 app.use("/lib/", express.static(path.join(__dirname, "lib"), {
     setHeaders: (res) => {
+        // [FIX] Enable Cross-Origin Isolation for libcurl transport
+        res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+        res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     }
 }));
