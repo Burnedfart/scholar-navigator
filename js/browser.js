@@ -214,7 +214,22 @@ class Browser {
             e.stopImmediatePropagation();
 
             const tab = this.getActiveTab();
-            if (!tab || tab.url === 'browser://home') return;
+            if (!tab) return;
+
+            // Restore from Home if possible
+            if (tab.url === 'browser://home' && tab.iframe) {
+                if (this.__forwardProcessing) return;
+                this.__forwardProcessing = true;
+                setTimeout(() => this.__forwardProcessing = false, 300);
+
+                console.log('[NAVIGATOR] 🔜 Forward from Home - restoring site.');
+                tab.homeElement.classList.add('hidden');
+                tab.iframe.classList.add('active');
+                this.syncTabWithIframe(tab);
+                return;
+            }
+
+            if (tab.url === 'browser://home') return;
 
             if (this.__forwardProcessing) return;
             this.__forwardProcessing = true;
