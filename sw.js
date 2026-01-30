@@ -13,7 +13,7 @@ try {
 }
 
 // Ensure immediate control
-const VERSION = 'v19'; // Logo Color Fix Update
+const VERSION = 'v20'; // Robust Logo Filter Update
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
@@ -52,7 +52,7 @@ if (!scramjetBundle) {
 }
 
 // Cache name for static resources
-const CACHE_NAME = 'scramjet-proxy-cache-v19'; // Logo Fix Update
+const CACHE_NAME = 'scramjet-proxy-cache-v20'; // Final Logo Filter Update
 const STATIC_CACHE_PATTERNS = [
     /\.css$/,
     /\.js$/,

@@ -16,19 +16,19 @@
     --danger-color: #d93025;
     --radius-lg: 12px;
     --radius-md: 8px;
-    --logo-filter: brightness(0) saturate(100%) invert(10%) sepia(3%) saturate(1048%) hue-rotate(188deg) brightness(97%) contrast(92%);
+    --logo-filter: brightness(0) saturate(100%) invert(11%) sepia(5%) saturate(830%) hue-rotate(192deg) brightness(94%) contrast(93%);
 }
 
 html[data-theme="ink"] {
-    --logo-filter: invert(100%) sepia(4%) saturate(738%) hue-rotate(182deg) brightness(95%) contrast(90%);
+    --logo-filter: brightness(0) saturate(100%) invert(98%) sepia(1%) saturate(1512%) hue-rotate(182deg) brightness(97%) contrast(91%);
 }
 
 html[data-theme="coffee"] {
-    --logo-filter: invert(98%) sepia(10%) saturate(347%) hue-rotate(323deg) brightness(101%) contrast(92%);
+    --logo-filter: brightness(0) saturate(100%) invert(97%) sepia(10%) saturate(350%) hue-rotate(323deg) brightness(101%) contrast(92%);
 }
 
 html[data-theme="nebula"] {
-    --logo-filter: invert(90%) sepia(13%) saturate(394%) hue-rotate(213deg) brightness(101%) contrast(96%);
+    --logo-filter: brightness(0) saturate(100%) invert(93%) sepia(16%) saturate(301%) hue-rotate(213deg) brightness(101%) contrast(96%);
 }
 
 html[data-theme="ink"] {
@@ -756,12 +756,12 @@ iframe.browser-viewport.active {
 .warning-title {
     font-weight: 700;
     margin-bottom: 2px;
-    color: #2d3748;
+    color: var(--text-primary);
 }
 
 .warning-message {
     font-size: 13px;
-    color: #4a5568;
+    color: var(--text-secondary);
     line-height: 1.4;
 }
 
