@@ -681,17 +681,29 @@ class Browser {
                                             const isMiddleClick = e.button === 1;
                                             const isCmdOrCtrl = e.ctrlKey || e.metaKey;
 
+                                            // DEBUG: Log raw link properties
+                                            console.log('[BROWSER] 🔍 RAW LINK DEBUG:', {
+                                                href: link.href,
+                                                target: target,
+                                                dataset: link.dataset,
+                                                attributes: Array.from(link.attributes).map(a => ({ name: a.name, value: a.value }))
+                                            });
+
                                             // Get href and decode if it's a Bing redirect
                                             let url = link.href;
 
                                             // Bing wraps URLs in their click tracker: /ck/a?...&u=<encoded_url>
                                             if (url.includes('/ck/a?') || url.includes('&u=')) {
+                                                console.log('[BROWSER] 🔍 Detected Bing redirect URL, attempting decode...');
                                                 try {
                                                     const urlObj = new URL(url);
                                                     const realUrl = urlObj.searchParams.get('u');
                                                     if (realUrl) {
+                                                        console.log('[BROWSER] 🔍 Encoded URL param u:', realUrl);
                                                         // Bing uses base64url encoding
-                                                        url = 'https://' + atob(realUrl.replace(/_/g, '/').replace(/-/g, '+')).substring(2);
+                                                        const decoded = 'https://' + atob(realUrl.replace(/_/g, '/').replace(/-/g, '+')).substring(2);
+                                                        console.log('[BROWSER] 🔍 Decoded URL:', decoded);
+                                                        url = decoded;
                                                     }
                                                 } catch (err) {
                                                     console.warn('[BROWSER] Failed to decode Bing redirect:', err);
@@ -705,7 +717,9 @@ class Browser {
                                                 const linkOrigin = new URL(url).origin;
                                                 const currentOrigin = new URL(iframeWindow.location.href).origin;
                                                 isCrossOrigin = linkOrigin !== currentOrigin;
+                                                console.log('[BROWSER] 🔍 Origin check:', { linkOrigin, currentOrigin, isCrossOrigin });
                                             } catch (err) {
+                                                console.warn('[BROWSER] Origin check failed:', err);
                                                 // Invalid URL, let it through
                                             }
 
