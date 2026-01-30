@@ -54,6 +54,48 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
         });
         console.log('✅ [SW] Registered:', registration.scope);
 
+        // Handle Service Worker Updates
+        const showUpdatePrompt = (waitingWorker) => {
+            const banner = document.getElementById('update-banner');
+            const updateBtn = document.getElementById('update-btn');
+            const closeBtn = document.getElementById('update-close-btn');
+
+            if (banner && updateBtn) {
+                banner.classList.remove('hidden');
+                updateBtn.onclick = () => {
+                    waitingWorker.postMessage('skipWaiting');
+                    banner.classList.add('hidden');
+                };
+                if (closeBtn) {
+                    closeBtn.onclick = () => banner.classList.add('hidden');
+                }
+            }
+        };
+
+        // 1. If there's already a waiting worker, show prompt immediately
+        if (registration.waiting) {
+            console.log('🔄 [SW] New version already waiting');
+            showUpdatePrompt(registration.waiting);
+        }
+
+        // 2. If a new worker is found, listen for it to be installed
+        registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            console.log('🔄 [SW] Update found, installing...');
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('🔄 [SW] Update installed and waiting');
+                    showUpdatePrompt(newWorker);
+                }
+            });
+        });
+
+        // 3. When the new worker takes control, reload the page
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('⚡ [SW] Controller changed, reloading...');
+            window.location.reload();
+        });
+
         // Wait for SW to be ready with timeout
         await Promise.race([
             navigator.serviceWorker.ready,

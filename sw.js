@@ -17,7 +17,6 @@ const VERSION = 'v20'; // Robust Logo Filter Update
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
-    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -274,6 +273,12 @@ function bufferToBase64(buffer) {
 
 // Listen for messages from main page
 self.addEventListener('message', async (event) => {
+    if (event.data === 'skipWaiting') {
+        console.log('SW: 🚀 Skipping waiting on user request');
+        self.skipWaiting();
+        return;
+    }
+
     if (event.data?.type === 'init_complete') {
         console.log('SW: 📨 Received init_complete signal');
 
