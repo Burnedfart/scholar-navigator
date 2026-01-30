@@ -570,139 +570,62 @@ class Browser {
                     const attachWindowOpenOverride = () => {
                         try {
                             const iframeWindow = tab.iframe.contentWindow;
+                            if (!iframeWindow) return;
 
-                            // Debug logging
-                            console.log('[BROWSER] Override attempt - has contentWindow:', !!iframeWindow,
-                                'already overridden:', iframeWindow?.__proxyTabsOverridden,
-                                'iframe src:', tab.iframe.src?.substring(0, 100));
+                            if (!iframeWindow.__proxyTabsOverridden) {
+                                // NAVIGATION INTERCEPTION
+                                iframeWindow.document.addEventListener('click', (e) => {
+                                    const link = e.target.closest('a');
+                                    if (!link) return;
 
-                            if (iframeWindow && !iframeWindow.__proxyTabsOverridden) {
-                                console.log('[BROWSER] ⚡ Attaching window.open override...');
+                                    let url = link.getAttribute('data-scramjet-url') || link.href;
+                                    const target = link.getAttribute('target');
 
-                                // INTERCEPT TOP.LOCATION ACCESS
-                                // Bing omnibox results try to navigate top window
-                                try {
-                                    const topWin = iframeWindow.top;
-                                    const originalTopLocation = topWin.location;
+                                    // FIX TRUNCATED URLS (Bing Tracking Decoder)
+                                    if (url.includes('/ck/a?') || url.includes('&u=')) {
+                                        try {
+                                            const urlObj = new URL(url);
+                                            const u = urlObj.searchParams.get('u');
+                                            if (u) {
+                                                // Bing base64url -> real URL
+                                                url = 'https://' + atob(u.replace(/_/g, '/').replace(/-/g, '+')).substring(2);
+                                            }
+                                        } catch (err) { }
+                                    }
 
-                                    Object.defineProperty(iframeWindow, 'top', {
-                                        get: () => {
-                                            // Return fake top that redirects location sets to new tabs
-                                            return new Proxy(topWin, {
-                                                get: (target, prop) => {
-                                                    if (prop === 'location') {
-                                                        return new Proxy(originalTopLocation, {
-                                                            set: (locTarget, locProp, value) => {
-                                                                if (locProp === 'href') {
-                                                                    console.log('[BROWSER] 🚨 Blocked top.location.href =', value);
-                                                                    this.createTab(value);
-                                                                    return true;
-                                                                }
-                                                                return Reflect.set(locTarget, locProp, value);
-                                                            }
-                                                        });
-                                                    }
-                                                    return Reflect.get(target, prop);
-                                                }
-                                            });
-                                        },
-                                        configurable: true
-                                    });
-                                    console.log('[BROWSER] ✅ top.location hijacking attached');
-                                } catch (topErr) {
-                                    console.warn('[BROWSER] ⚠️ Could not hijack top.location:', topErr.message);
-                                }
+                                    // PREVENT ESCAPES
+                                    const isNewTab = target === '_blank' || target === '_top' || target === '_parent';
+                                    const isSpecialClick = e.ctrlKey || e.metaKey || e.button === 1;
 
-                                // Store the original
+                                    if (isNewTab || isSpecialClick) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        this.createTab(url);
+                                        return false;
+                                    }
+                                }, { capture: true });
+
+                                // window.open override
                                 iframeWindow.__originalOpen = iframeWindow.open;
-
-                                // Override window.open
-                                iframeWindow.open = (url, target, features) => {
-                                    console.log('[BROWSER] ✅✅ Intercepted window.open:', url, 'target:', target);
-
-                                    // Create new tab in our proxy
+                                iframeWindow.open = (url, target) => {
                                     this.createTab(url);
-
-                                    // Return a mock window object
-                                    return {
-                                        focus: () => { },
-                                        blur: () => { },
-                                        close: () => { },
-                                        closed: false,
-                                        location: { href: url }
-                                    };
+                                    return { focus: () => { }, blur: () => { }, close: () => { }, closed: false, location: { href: url } };
                                 };
 
                                 iframeWindow.__proxyTabsOverridden = true;
-                                console.log('[BROWSER] ✅ window.open override SUCCESS');
-
-                                // AGGRESSIVE TARGET=_BLANK REMOVAL
-                                // Use MutationObserver to catch dynamically loaded links
-                                try {
-                                    const removeBlankTargets = () => {
-                                        const links = iframeWindow.document.querySelectorAll('a[target="_blank"]');
-                                        if (links.length > 0) {
-                                            console.log('[BROWSER] 🔗 Found', links.length, 'target=_blank links, removing...');
-                                            links.forEach(link => {
-                                                link.removeAttribute('target');
-                                                console.log('[BROWSER] 🔗 Removed target from:', link.href);
-                                            });
-                                        }
-                                    };
-
-                                    // Remove immediately
-                                    removeBlankTargets();
-
-                                    // Watch for new links being added
-                                    const observer = new MutationObserver(() => {
-                                        removeBlankTargets();
-                                    });
-
-                                    observer.observe(iframeWindow.document.body, {
-                                        childList: true,
-                                        subtree: true,
-                                        attributes: true,
-                                        attributeFilter: ['target']
-                                    });
-
-                                    console.log('[BROWSER] ✅ target=_blank removal observer active');
-                                } catch (err) {
-                                    console.warn('[BROWSER] ⚠️ Could not attach observer:', err.message);
-                                }
-
-                                // NOTE: We removed link click interception because:
-                                // 1. Scramjet truncates href to "..." for security
-                                // 2. Cross-origin detection broke normal navigation  
-                                // 3. Scramjet's postMessage API sends full URLs for window.open
-                                // The window.open override above is sufficient.
+                                console.log('[BROWSER] ✅ Navigation overrides active');
                             }
                         } catch (e) {
                             // Cross-origin or security errors
-                            console.warn('[BROWSER] ⚠️ Cannot override window.open:', e.message);
                         }
                     };
 
-                    // Attach immediately
-                    setTimeout(attachWindowOpenOverride, 100);
-
-                    // Attach on load
+                    // Attach overrides on load and periodically
                     tab.iframe.addEventListener('load', () => {
-                        if (this.activeTabId === tab.id) {
-                            this.setLoading(false);
-                        }
+                        if (this.activeTabId === tab.id) this.setLoading(false);
                         attachWindowOpenOverride();
                     });
-
-                    // Also try to re-attach periodically for the first few seconds
-                    // (in case the iframe content loads asynchronously)
-                    let attempts = 0;
-                    const reattachInterval = setInterval(() => {
-                        attachWindowOpenOverride();
-                        attempts++;
-                        if (attempts >= 10) {
-                            clearInterval(reattachInterval);
-                        }
-                    }, 500);
+                    setInterval(attachWindowOpenOverride, 1000);
 
                 } else {
                     console.error('Scramjet unavailable');

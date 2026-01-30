@@ -60,6 +60,7 @@ const STATIC_CACHE_PATTERNS = [
     /\.jpg$/,
     /\.svg$/,
     /\.ico$/,
+    /\.wasm$/,
 ];
 
 // Check if URL matches static resource patterns
@@ -133,6 +134,11 @@ async function handleRequest(event) {
         return fetch(event.request);
     }
     try {
+        // EXCLUDE internal scramjet library files from being proxied (prevents recursion/binary corruption)
+        if (url.includes('/lib/scramjet/') || url.includes('scramjet.wasm')) {
+            return fetch(event.request);
+        }
+
         // Check if this request should be proxied
         if (scramjet.route(event)) {
             // console.log(`SW: 🚀 PROXY for ${url}`);
