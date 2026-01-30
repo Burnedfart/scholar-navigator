@@ -602,29 +602,38 @@ class Browser {
                                 iframeWindow.__proxyTabsOverridden = true;
                                 console.log('[BROWSER] ✅ window.open override SUCCESS');
 
-                                // MINIMAL CLICK INTERCEPTION
-                                // Only catch target="_blank" and remove the target attribute
-                                // This prevents new native tabs while allowing normal navigation
+                                // AGGRESSIVE TARGET=_BLANK REMOVAL
+                                // Use MutationObserver to catch dynamically loaded links
                                 try {
-                                    const handleLink = (e) => {
-                                        const link = e.target.closest('a');
-                                        if (link) {
-                                            const target = link.getAttribute('target');
-                                            if (target && target.toLowerCase() === '_blank') {
-                                                console.log('[BROWSER] 🔗 Removed target=_blank from link (' + e.type + '):', link.href);
-                                                // Remove target so it navigates in same iframe
+                                    const removeBlankTargets = () => {
+                                        const links = iframeWindow.document.querySelectorAll('a[target="_blank"]');
+                                        if (links.length > 0) {
+                                            console.log('[BROWSER] 🔗 Found', links.length, 'target=_blank links, removing...');
+                                            links.forEach(link => {
                                                 link.removeAttribute('target');
-                                                // Don't prevent default - let navigation proceed
-                                            }
+                                                console.log('[BROWSER] 🔗 Removed target from:', link.href);
+                                            });
                                         }
                                     };
 
-                                    // Attach to both mousedown and click for maximum coverage
-                                    iframeWindow.document.addEventListener('mousedown', handleLink, { capture: true });
-                                    iframeWindow.document.addEventListener('click', handleLink, { capture: true });
-                                    console.log('[BROWSER] ✅ target=_blank removal attached (mousedown + click)');
+                                    // Remove immediately
+                                    removeBlankTargets();
+
+                                    // Watch for new links being added
+                                    const observer = new MutationObserver(() => {
+                                        removeBlankTargets();
+                                    });
+
+                                    observer.observe(iframeWindow.document.body, {
+                                        childList: true,
+                                        subtree: true,
+                                        attributes: true,
+                                        attributeFilter: ['target']
+                                    });
+
+                                    console.log('[BROWSER] ✅ target=_blank removal observer active');
                                 } catch (err) {
-                                    console.warn('[BROWSER] ⚠️ Could not attach click listener:', err.message);
+                                    console.warn('[BROWSER] ⚠️ Could not attach observer:', err.message);
                                 }
 
                                 // NOTE: We removed link click interception because:
