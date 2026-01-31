@@ -259,10 +259,21 @@
             <!-- Iframes will be injected here -->
         </div>
     </div>
-
-    <!-- Toast Notifications Container -->
-    <div id="toast-container" class="toast-container"></div>
-
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Error</h3>
+                <button class="modal-close-btn" id="error-close-btn">&times;</button>
+            </div>
+            <div class="error-modal-body">
+                <p id="error-message">An unexpected error occurred.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary full-width-btn" id="error-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
     <script src="js/error-handler.js?v=26"></script>
     <script src="js/storage-health.js?v=26"></script>
     <script src="js/wisp-health.js?v=26"></script>
