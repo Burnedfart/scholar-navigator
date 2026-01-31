@@ -13,8 +13,8 @@ try {
 }
 
 // Bump to force cache refresh
-const VERSION = 'v29';
-const CACHE_NAME = 'scramjet-proxy-cache-v29';
+const VERSION = 'v30'; // Movie Player Sandbox Fix
+const CACHE_NAME = 'scramjet-proxy-cache-v30';
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);

@@ -1445,6 +1445,12 @@ class Browser {
                     tab.iframe.style.border = 'none';
                     tab.iframe.width = '100%';
                     tab.iframe.style.position = 'absolute';
+
+                    // FIX: "Sandbox Detected" & Permission Issues
+                    // Explicitly remove sandbox and add all common permissions
+                    tab.iframe.removeAttribute('sandbox');
+                    tab.iframe.allow = "autoplay; camera; clipboard-read; clipboard-write; display-capture; encrypted-media; fullscreen; gamepad; geolocation; microphone; midi; payment; picture-in-picture; publickey-credentials-get; screen-wake-lock; speaker-selection; usb; web-share";
+
                     this.viewportsContainer.appendChild(tab.iframe);
 
                     // Helper function to override window.open
@@ -1727,6 +1733,10 @@ class Browser {
             style.top = style.bottom = style.left = style.right = "0";
             style.border = style.outline = "none";
             style.width = style.height = "100%";
+
+            // FIX: "Sandbox Detected" & Permission Issues in Cloak
+            iframe.removeAttribute('sandbox');
+            iframe.allow = "autoplay; camera; clipboard-read; clipboard-write; display-capture; encrypted-media; fullscreen; gamepad; geolocation; microphone; midi; payment; picture-in-picture; publickey-credentials-get; screen-wake-lock; speaker-selection; usb; web-share";
 
             const pLink = localStorage.getItem("pLink") || "https://google.com";
 
