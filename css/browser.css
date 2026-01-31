@@ -337,6 +337,195 @@ html[data-theme="nebula"] {
     letter-spacing: 0.5px;
 }
 
+/* System Monitor Styling */
+.monitor-group {
+    background: rgba(var(--accent-color-rgb), 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-top: 32px;
+}
+
+.monitor-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 100px;
+}
+
+.stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 60px;
+    text-align: right;
+}
+
+.stat-bar-container {
+    flex: 1;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.stat-bar {
+    height: 100%;
+    background: var(--accent-color);
+    width: 0%;
+    transition: width 1s ease-in-out;
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+/* Liquid Glass Slider Styling */
+.slider-container {
+    padding: 0;
+    position: relative;
+    height: 32px;
+    /* Fixed height to match hit zone */
+    margin-top: 10px;
+    margin-bottom: 24px;
+    /* Space for labels below */
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    /* Large hit zone */
+    background: transparent;
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 20;
+    padding: 0 11px;
+    /* Match dot radius for track bounds */
+    box-sizing: border-box;
+}
+
+/* The Animated Phantom Dot (The Jump Dot) */
+.slider-dot-phantom {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    background: var(--accent-color);
+    border: 3px solid var(--window-bg-solid);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.4);
+    /* Snappy Jump Animation */
+    transition: left 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: none;
+    z-index: 10;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.slider-labels {
+    position: absolute;
+    bottom: -24px;
+    right: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Number Line ticks */
+.number-line-ticks {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    right: 11px;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* The horizontal line connecting the ticks */
+.number-line-ticks::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: color-mix(in srgb, var(--accent-color), black 25%);
+    transform: translateY(-50%);
+    z-index: -1;
+}
+
+.tick {
+    width: 2px;
+    height: 8px;
+    background: color-mix(in srgb, var(--accent-color), black 25%);
+    border-radius: 2px;
+    margin-left: -1px;
+    /* Center the 2px tick on the flex point */
+}
+
+/* Ensure the real thumb is always invisible and doesn't conflict */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    opacity: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    opacity: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.tick.active {
+    background: color-mix(in srgb, var(--accent-color), black 25%);
+}
+
+/* End of Slider Styles */
+
+#tab-sleep-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-color);
+    font-family: 'JetBrains Mono', monospace;
+}
+
 .settings-hint {
     font-size: 12px;
     color: var(--text-secondary);
@@ -976,6 +1165,36 @@ html[data-theme="cloud"] {
     z-index: 1;
 }
 
+.tab.sleeping {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+.tab-sleep-icon {
+    display: none;
+    margin-right: 6px;
+    color: var(--accent-color);
+    animation: pulse-sleep 2s infinite ease-in-out;
+}
+
+.tab.sleeping .tab-sleep-icon {
+    display: block;
+}
+
+@keyframes pulse-sleep {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scale(0.9);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
 html[data-theme="ink"] .tab.active {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
@@ -1042,6 +1261,102 @@ html[data-theme="ink"] .tab.active {
     width: 20px;
     height: 20px;
 }
+
+/* Tab Hover Tooltip */
+.tab-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: var(--window-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 0;
+    transform: translateY(-4px);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+    top: 48px;
+    /* Locked Y position just below the tab bar height */
+}
+
+/* Semi-transparent overlay to match glassmorphism better on some themes */
+.tab-tooltip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(var(--accent-color-rgb), 0.05);
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.tab-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.tooltip-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.tooltip-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tooltip-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+    opacity: 0.3;
+}
+
+/* Disabled Slider Styling */
+.settings-group.disabled-gray {
+    opacity: 0.45;
+    pointer-events: none;
+    filter: grayscale(1);
+    position: relative;
+}
+
+.settings-group.disabled-gray::after {
+    content: '🔒';
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.settings-group.disabled-gray .tick,
+.settings-group.disabled-gray .number-line-ticks::after,
+.settings-group.disabled-gray .slider-dot-phantom {
+    background: #888 !important;
+    box-shadow: none !important;
+}
+
+.settings-group.disabled-gray input[type="range"] {
+    cursor: not-allowed;
+}
+
 
 /* Nav Toolbar */
 .nav-toolbar {
@@ -1539,4 +1854,11 @@ html.perf-no-shadows *::after {
 /* Re-allow inset shadows used as strokes to maintain UI feedback */
 html.perf-no-shadows .nav-item.active {
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+html.perf-no-blur *,
+html.perf-no-blur *::before,
+html.perf-no-blur *::after {
+    filter: none !important;
+    backdrop-filter: none !important;
 }

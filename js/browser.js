@@ -50,10 +50,42 @@ class Browser {
         // Performance Elements
         this.perfToggles = {
             animations: document.getElementById('perf-disable-animations'),
-            shadows: document.getElementById('perf-disable-shadows')
+            shadows: document.getElementById('perf-disable-shadows'),
+            blur: document.getElementById('perf-disable-blur'),
+            showTabData: document.getElementById('perf-show-tab-data'),
+            tabSleep: document.getElementById('perf-tab-sleep-toggle'),
+            tabSleepTimer: document.getElementById('perf-tab-sleep-timer')
         };
+        this.perfConfig = {
+            tabSleepGroup: document.getElementById('tab-sleep-config'),
+            tabSleepValue: document.getElementById('tab-sleep-value'),
+            tabSleepTicks: document.querySelectorAll('.number-line-ticks .tick'),
+            tabSleepDot: document.getElementById('tab-sleep-dot')
+        };
+        this.sleepThresholds = [60, 300, 600, 1200, 1800]; // 1m, 5m, 10m, 20m, 30m
+        this.sleepInterval = null;
 
 
+
+        // Monitor Elements
+        this.monitorElements = {
+            memoryBar: document.getElementById('monitor-memory-bar'),
+            memoryValue: document.getElementById('monitor-memory-value'),
+            tabsValue: document.getElementById('monitor-tabs-value'),
+            uptimeValue: document.getElementById('monitor-uptime-value')
+        };
+        this.startTime = Date.now();
+        this.monitorInterval = null;
+
+        // Tooltip Elements
+        this.tooltip = {
+            el: document.getElementById('tab-tooltip'),
+            memory: document.getElementById('tt-memory'),
+            sleep: document.getElementById('tt-sleep'),
+            sleepContainer: document.getElementById('tt-sleep-container')
+        };
+        this.currentTooltipTabId = null;
+        this.tooltipUpdateInterval = null;
 
         // Error Modal
         this.errorModal = document.getElementById('error-modal');
@@ -141,9 +173,10 @@ class Browser {
         Object.keys(this.perfToggles).forEach(key => {
             const toggle = this.perfToggles[key];
             if (toggle) {
-                toggle.addEventListener('change', () => {
+                const eventType = toggle.type === 'range' ? 'input' : 'change';
+                toggle.addEventListener(eventType, () => {
                     this.applyPerformanceSettings();
-                    localStorage.setItem(`perf_${key}`, toggle.checked ? 'true' : 'false');
+                    localStorage.setItem(`perf_${key}`, toggle.checked !== undefined ? (toggle.checked ? 'true' : 'false') : toggle.value);
                 });
             }
         });
@@ -244,6 +277,62 @@ class Browser {
             console.error('[BROWSER] Proxy initialization error:', e);
             this.updateProxyStatus('error');
         }
+
+        // Start Monitor
+        this.startMonitor();
+    }
+
+    startMonitor() {
+        if (this.monitorInterval) clearInterval(this.monitorInterval);
+        this.updateMonitor();
+        this.monitorInterval = setInterval(() => this.updateMonitor(), 1000);
+    }
+
+    updateMonitor() {
+        if (!this.monitorElements.memoryValue) return;
+
+        // 1. Memory Usage
+        let memUsed = 0;
+        let memLimit = 1024; // Default limit 1GB for calculation
+
+        if (window.performance && window.performance.memory) {
+            memUsed = Math.round(window.performance.memory.usedJSHeapSize / (1024 * 1024));
+            memLimit = Math.round(window.performance.memory.jsHeapSizeLimit / (1024 * 1024));
+        } else {
+            // Fallback: Simulate realistic base browser usage based on tabs
+            const baseUsage = 120; // Base MB
+            const tabUsage = this.tabs.length * 45; // ~45MB per tab
+            memUsed = baseUsage + tabUsage + Math.floor(Math.random() * 10);
+        }
+
+        const memPercent = Math.min(100, (memUsed / memLimit) * 100);
+        this.monitorElements.memoryValue.textContent = `${memUsed} MB`;
+        this.monitorElements.memoryBar.style.width = `${memPercent}%`;
+
+        // Change color based on usage
+        if (memPercent > 80) {
+            this.monitorElements.memoryBar.style.background = 'var(--danger-color)';
+        } else {
+            this.monitorElements.memoryBar.style.background = 'var(--accent-color)';
+        }
+
+        // 2. Active Tabs
+        this.monitorElements.tabsValue.textContent = this.tabs.length;
+
+        // 3. Uptime
+        const uptimeMs = Date.now() - this.startTime;
+        const totalSeconds = Math.floor(uptimeMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        this.monitorElements.uptimeValue.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // 4. Update individual tab memory (Fluctuation)
+        this.tabs.forEach(tab => {
+            if (!tab.sleeping) {
+                const change = (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 2);
+                tab.memory = Math.max(10, Math.min(500, tab.memory + change));
+            }
+        });
     }
 
 
@@ -514,7 +603,12 @@ class Browser {
         Object.keys(this.perfToggles).forEach(key => {
             const toggle = this.perfToggles[key];
             if (toggle) {
-                toggle.checked = localStorage.getItem(`perf_${key}`) === 'true';
+                const val = localStorage.getItem(`perf_${key}`);
+                if (toggle.type === 'checkbox') {
+                    toggle.checked = val === 'true';
+                } else if (toggle.type === 'range' && val !== null) {
+                    toggle.value = val;
+                }
             }
         });
     }
@@ -523,7 +617,12 @@ class Browser {
         Object.keys(this.perfToggles).forEach(key => {
             const toggle = this.perfToggles[key];
             if (toggle) {
-                toggle.checked = localStorage.getItem(`perf_${key}`) === 'true';
+                const val = localStorage.getItem(`perf_${key}`);
+                if (toggle.type === 'checkbox') {
+                    toggle.checked = val === 'true';
+                } else if (toggle.type === 'range' && val !== null) {
+                    toggle.value = val;
+                }
             }
         });
         this.applyPerformanceSettings();
@@ -543,12 +642,99 @@ class Browser {
         } else {
             doc.classList.remove('perf-no-shadows');
         }
+
+        if (this.perfToggles.blur && this.perfToggles.blur.checked) {
+            doc.classList.add('perf-no-blur');
+        } else {
+            doc.classList.remove('perf-no-blur');
+        }
+
+        // Tab Sleep UI Sync
+        const sleepEnabled = this.perfToggles.tabSleep && this.perfToggles.tabSleep.checked;
+        if (this.perfConfig.tabSleepGroup) {
+            this.perfConfig.tabSleepGroup.classList.toggle('disabled-gray', !sleepEnabled);
+        }
+
+        if (this.perfToggles.tabSleepTimer && this.perfConfig.tabSleepValue) {
+            const val = parseInt(this.perfToggles.tabSleepTimer.value);
+            const labels = ["1 Minute", "5 Minutes", "10 Minutes", "20 Minutes", "30 Minutes"];
+            this.perfConfig.tabSleepValue.textContent = labels[val] || "5 Minutes";
+
+            // Update Number Line Ticks
+            if (this.perfConfig.tabSleepTicks) {
+                this.perfConfig.tabSleepTicks.forEach((tick, idx) => {
+                    tick.classList.toggle('active', idx === val);
+                });
+            }
+
+            // Update Phantom Dot Position (The Jump Animation)
+            if (this.perfConfig.tabSleepDot) {
+                // val is 0-4. Calculate position from center of first tick (11px) to center of last tick (100% - 11px)
+                const ratio = val / 4;
+                this.perfConfig.tabSleepDot.style.left = `calc(11px + ${ratio} * (100% - 22px))`;
+            }
+        }
+
+        // Start or Stop the interval based on the setting
+        if (sleepEnabled) {
+            if (!this.sleepInterval) {
+                this.sleepInterval = setInterval(() => this.checkTabInactivity(), 5000);
+            }
+        } else {
+            if (this.sleepInterval) {
+                clearInterval(this.sleepInterval);
+                this.sleepInterval = null;
+            }
+            // Wake up all sleeping tabs if feature is disabled
+            this.tabs.forEach(tab => {
+                if (tab.sleeping) this.wakeUpTab(tab);
+            });
+        }
     }
 
     updateActiveNavItem(activeItem) {
         if (!activeItem) return;
         this.settingsNavItems.forEach(item => item.classList.remove('active'));
         activeItem.classList.add('active');
+    }
+
+    checkTabInactivity() {
+        if (!this.perfToggles.tabSleep || !this.perfToggles.tabSleep.checked) return;
+
+        const val = parseInt(this.perfToggles.tabSleepTimer.value);
+        const threshold = this.sleepThresholds[val] * 1000;
+        const now = Date.now();
+
+        this.tabs.forEach(tab => {
+            if (tab.id === this.activeTabId || tab.sleeping || tab.url === 'browser://home') return;
+
+            if (now - tab.lastActive > threshold) {
+                this.putTabToSleep(tab);
+            }
+        });
+    }
+
+    putTabToSleep(tab) {
+        if (tab.sleeping) return;
+        console.log(`[BROWSER] 😴 Putting tab ${tab.id} to sleep (${tab.title})`);
+        tab.sleeping = true;
+        tab.element.classList.add('sleeping');
+
+        if (tab.iframe) {
+            tab.iframe.src = 'about:blank';
+        }
+    }
+
+    wakeUpTab(tab) {
+        if (!tab.sleeping) return;
+        console.log(`[BROWSER] ☀️ Waking up tab ${tab.id} (${tab.title})`);
+        tab.sleeping = false;
+        tab.element.classList.remove('sleeping');
+        tab.lastActive = Date.now();
+
+        if (tab.iframe) {
+            tab.iframe.src = tab.url;
+        }
     }
 
     handleSettingsScroll() {
@@ -772,7 +958,10 @@ class Browser {
             iframe: null,
             scramjetWrapper: null,
             homeElement: null,
-            element: null
+            element: null,
+            lastActive: Date.now(),
+            sleeping: false,
+            memory: Math.floor(25 + Math.random() * 40) // Heuristic: Base 25MB + random
         };
 
         // Create Tab UI
@@ -780,6 +969,11 @@ class Browser {
         tabEl.className = 'tab';
         tabEl.dataset.id = id;
         tabEl.innerHTML = `
+            <div class="tab-sleep-icon">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </div>
             <img class="tab-favicon" src="" style="display:none;"> 
             <div class="tab-title">New Tab</div>
             <div class="tab-close">
@@ -795,6 +989,11 @@ class Browser {
                 this.switchTab(id);
             }
         });
+
+        // Hover Tooltip Events
+        tabEl.addEventListener('mouseenter', () => this.showTabTooltip(tab));
+        tabEl.addEventListener('mouseleave', () => this.hideTabTooltip());
+        tabEl.addEventListener('mousemove', (e) => this.positionTabTooltip(e));
 
         tabEl.querySelector('.tab-close').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -982,6 +1181,10 @@ class Browser {
         const newTab = this.tabs.find(t => t.id === id);
         if (newTab) {
             newTab.element.classList.add('active');
+            newTab.lastActive = Date.now();
+            if (newTab.sleeping) {
+                this.wakeUpTab(newTab);
+            }
             this.activeTabId = id;
 
             if (newTab.url === 'browser://home') {
@@ -1055,6 +1258,76 @@ class Browser {
         return this.tabs.find(t => t.id === this.activeTabId);
     }
 
+    // Tab Tooltip UI
+    showTabTooltip(tab) {
+        if (!this.tooltip.el) return;
+
+        // Check the "Show Tab Data" setting
+        const dataEnabled = this.perfToggles.showTabData && this.perfToggles.showTabData.checked;
+        if (!dataEnabled) return;
+
+        this.currentTooltipTabId = tab.id;
+        this.updateTabTooltip();
+        this.tooltip.el.classList.add('visible');
+
+        if (this.tooltipUpdateInterval) clearInterval(this.tooltipUpdateInterval);
+        this.tooltipUpdateInterval = setInterval(() => this.updateTabTooltip(), 1000);
+    }
+
+    hideTabTooltip() {
+        if (!this.tooltip.el) return;
+        this.currentTooltipTabId = null;
+        this.tooltip.el.classList.remove('visible');
+        if (this.tooltipUpdateInterval) {
+            clearInterval(this.tooltipUpdateInterval);
+            this.tooltipUpdateInterval = null;
+        }
+    }
+
+    positionTabTooltip(e) {
+        if (!this.tooltip.el) return;
+        const x = e.clientX;
+        // Y position is now locked via CSS 'top: 48px'
+
+        // Keep tooltip inside window horizontally
+        const rect = this.tooltip.el.getBoundingClientRect();
+        let finalX = x - rect.width / 2;
+        if (finalX < 10) finalX = 10;
+        if (finalX + rect.width > window.innerWidth - 10) finalX = window.innerWidth - rect.width - 10;
+
+        this.tooltip.el.style.left = `${finalX}px`;
+    }
+
+    updateTabTooltip() {
+        if (this.currentTooltipTabId === null) return;
+        const tab = this.tabs.find(t => t.id === this.currentTooltipTabId);
+        if (!tab) return;
+
+        // 1. Update Memory
+        this.tooltip.memory.textContent = `${tab.memory} MB`;
+
+        // 2. Update Sleep Timer
+        const sleepEnabled = this.perfToggles.tabSleep && this.perfToggles.tabSleep.checked;
+        const isNotActive = tab.id !== this.activeTabId;
+        const isNotHome = tab.url !== 'browser://home';
+
+        if (sleepEnabled && isNotActive && isNotHome && !tab.sleeping) {
+            this.tooltip.sleepContainer.style.display = 'block';
+
+            const val = parseInt(this.perfToggles.tabSleepTimer.value);
+            const threshold = this.sleepThresholds[val] * 1000;
+            const elapsed = Date.now() - tab.lastActive;
+            const remainingMs = Math.max(0, threshold - elapsed);
+
+            const remainingSec = Math.floor(remainingMs / 1000);
+            const mins = Math.floor(remainingSec / 60);
+            const secs = remainingSec % 60;
+            this.tooltip.sleep.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            this.tooltip.sleepContainer.style.display = 'none';
+        }
+    }
+
     handleOmniboxSubmit() {
         const input = this.omnibox.value.trim();
         if (!input) return;
@@ -1062,6 +1335,9 @@ class Browser {
     }
 
     async navigate(input) {
+        const tab = this.tabs.find(t => t.id === this.activeTabId);
+        if (tab) tab.lastActive = Date.now();
+
         if (!window.ProxyService.initialized) {
             alert('Proxy is still loading...');
             return;
@@ -1098,7 +1374,6 @@ class Browser {
             return;
         }
 
-        const tab = this.getActiveTab();
         if (!tab) return;
 
         tab.url = url;

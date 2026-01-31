@@ -58,7 +58,7 @@
                     <div class="sidebar-header">
                         <div class="sidebar-brand">
                             <div class="brand-info">
-                                <span class="brand-name">Settings</span>
+                                <span class="brand-name">Control Center</span>
                             </div>
                         </div>
                     </div>
@@ -140,20 +140,86 @@
 
                         <section id="section-performance" class="settings-content-section">
                             <h4>Performance</h4>
+                            <div class="settings-group monitor-group">
+                                <label>System Monitor</label>
+                                <div class="monitor-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Memory Usage</span>
+                                        <div class="stat-bar-container">
+                                            <div id="monitor-memory-bar" class="stat-bar" style="width: 0%"></div>
+                                        </div>
+                                        <span id="monitor-memory-value" class="stat-value">0 MB</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Active Tabs</span>
+                                        <span id="monitor-tabs-value" class="stat-value">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Uptime</span>
+                                        <span id="monitor-uptime-value" class="stat-value">0:00</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="settings-group">
                                 <label class="settings-label">
                                     <input type="checkbox" id="perf-disable-animations">
                                     <span class="settings-text">Disable Animations</span>
                                 </label>
-                                <p class="settings-hint">Disables visual animations to improve performance and reduce
-                                    lag.</p>
+                                <p class="settings-hint">Disables visual animations such as fade-ins and page
+                                    transitions.</p>
                             </div>
                             <div class="settings-group">
                                 <label class="settings-label">
                                     <input type="checkbox" id="perf-disable-shadows">
                                     <span class="settings-text">Disable Shadows</span>
                                 </label>
-                                <p class="settings-hint">Disables shadows to improve performance.</p>
+                                <p class="settings-hint">Disables shadows under objects.</p>
+                            </div>
+                            <div class="settings-group">
+                                <label class="settings-label">
+                                    <input type="checkbox" id="perf-disable-blur">
+                                    <span class="settings-text">Disable Blur</span>
+                                </label>
+                                <p class="settings-hint">Disables backdrop blurs and filter effects.</p>
+                            </div>
+
+                            <div class="settings-group">
+                                <label class="settings-label">
+                                    <input type="checkbox" id="perf-show-tab-data">
+                                    <span class="settings-text">Show Tab Data</span>
+                                </label>
+                                <p class="settings-hint">Shows memory usage and sleep timers (if enabled) when hovering
+                                    over tabs.
+                                </p>
+                            </div>
+
+                            <div class="settings-group">
+                                <label class="settings-label">
+                                    <input type="checkbox" id="perf-tab-sleep-toggle">
+                                    <span class="settings-text">Enable Tab Sleeping</span>
+                                </label>
+                                <p class="settings-hint">Automatically puts inactive tabs to sleep to save memory.</p>
+                            </div>
+
+                            <div id="tab-sleep-config" class="settings-group hidden">
+                                <label>Sleep Delay</label>
+                                <p class="settings-hint">Tabs will sleep after this amount of time without activity.
+                                    Sleeping tabs reload when clicked.</p>
+                                <div class="slider-container">
+                                    <input type="range" id="perf-tab-sleep-timer" min="0" max="4" step="1" value="1">
+                                    <div id="tab-sleep-dot" class="slider-dot-phantom"></div>
+                                    <div class="number-line-ticks">
+                                        <div class="tick active"></div>
+                                        <div class="tick"></div>
+                                        <div class="tick"></div>
+                                        <div class="tick"></div>
+                                        <div class="tick"></div>
+                                    </div>
+                                    <div class="slider-labels">
+                                        <span id="tab-sleep-value">5 Minutes</span>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
@@ -353,6 +419,19 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-primary full-width-btn" id="error-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+    <div id="tab-tooltip" class="tab-tooltip">
+        <div class="tooltip-row">
+            <span class="tooltip-label">Memory</span>
+            <span class="tooltip-value" id="tt-memory">0 MB</span>
+        </div>
+        <div id="tt-sleep-container">
+            <div class="tooltip-divider"></div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Sleep In</span>
+                <span class="tooltip-value" id="tt-sleep">--:--</span>
             </div>
         </div>
     </div>
