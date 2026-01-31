@@ -13,8 +13,8 @@ try {
 }
 
 // Bump to force cache refresh
-const VERSION = 'v31'; // Sandbox & Security Header Fix
-const CACHE_NAME = 'scramjet-proxy-cache-v31';
+const VERSION = 'v32'; // Syntax Fix for Iframe Permissions
+const CACHE_NAME = 'scramjet-proxy-cache-v32';
 
 self.addEventListener('install', (event) => {
     console.log(`SW: 📥 Installing version ${VERSION}...`);
