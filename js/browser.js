@@ -47,12 +47,17 @@ class Browser {
         this.btnApplyDisguise = document.getElementById('btn-apply-disguise');
         this.btnResetDisguise = document.getElementById('btn-reset-disguise');
 
+        // Performance Elements
+        this.perfToggles = {
+            animations: document.getElementById('perf-disable-animations'),
+            shadows: document.getElementById('perf-disable-shadows')
+        };
+
 
 
         // Error Modal
         this.errorModal = document.getElementById('error-modal');
         this.errorMessage = document.getElementById('error-message');
-        this.errorCloseBtn = document.getElementById('error-close-btn');
         this.errorOkBtn = document.getElementById('error-ok-btn');
 
         // Disguise Presets
@@ -123,10 +128,6 @@ class Browser {
             });
         }
 
-        // Error Modal listeners
-        if (this.errorCloseBtn) {
-            this.errorCloseBtn.addEventListener('click', () => this.hideError());
-        }
         if (this.errorOkBtn) {
             this.errorOkBtn.addEventListener('click', () => this.hideError());
         }
@@ -134,6 +135,41 @@ class Browser {
             this.errorModal.addEventListener('click', (e) => {
                 if (e.target === this.errorModal) this.hideError();
             });
+        }
+
+        // Performance Event Bindings
+        Object.keys(this.perfToggles).forEach(key => {
+            const toggle = this.perfToggles[key];
+            if (toggle) {
+                toggle.addEventListener('change', () => {
+                    this.applyPerformanceSettings();
+                    localStorage.setItem(`perf_${key}`, toggle.checked ? 'true' : 'false');
+                });
+            }
+        });
+
+        // Settings Sidebar Navigation
+        this.settingsNavItems = document.querySelectorAll('.nav-item');
+        this.settingsScrollArea = document.querySelector('.settings-scroll-area');
+
+        if (this.settingsNavItems.length > 0) {
+            this.settingsNavItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const targetId = item.getAttribute('data-target');
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection && this.settingsScrollArea) {
+                        this.settingsScrollArea.scrollTo({
+                            top: targetSection.offsetTop - 32,
+                            behavior: 'smooth'
+                        });
+                        this.updateActiveNavItem(item);
+                    }
+                });
+            });
+        }
+
+        if (this.settingsScrollArea) {
+            this.settingsScrollArea.addEventListener('scroll', () => this.handleSettingsScroll());
         }
     }
 
@@ -180,6 +216,7 @@ class Browser {
         this.bindEvents();
         this.loadTheme();
         this.loadDisguise();
+        this.loadPerformanceSettings();
         this.updateProxyStatus('loading');
         if (localStorage.getItem('ab') === 'true') {
             this.openCloaked();
@@ -447,6 +484,9 @@ class Browser {
                     if (varName === '--text-primary') {
                         this.updateLogoFilterForColor(color);
                     }
+                    if (varName === '--window-bg') {
+                        document.documentElement.style.setProperty('--window-bg-solid', color);
+                    }
                 });
             });
         }
@@ -463,6 +503,83 @@ class Browser {
         }
         this.settingsModal.classList.remove('hidden');
         this.updateThemeActiveState();
+
+        // Reset to first section
+        if (this.settingsScrollArea) {
+            this.settingsScrollArea.scrollTop = 0;
+            this.updateActiveNavItem(this.settingsNavItems[0]);
+        }
+
+        // Sync performance settings in UI
+        Object.keys(this.perfToggles).forEach(key => {
+            const toggle = this.perfToggles[key];
+            if (toggle) {
+                toggle.checked = localStorage.getItem(`perf_${key}`) === 'true';
+            }
+        });
+    }
+
+    loadPerformanceSettings() {
+        Object.keys(this.perfToggles).forEach(key => {
+            const toggle = this.perfToggles[key];
+            if (toggle) {
+                toggle.checked = localStorage.getItem(`perf_${key}`) === 'true';
+            }
+        });
+        this.applyPerformanceSettings();
+    }
+
+    applyPerformanceSettings() {
+        const doc = document.documentElement;
+
+        if (this.perfToggles.animations && this.perfToggles.animations.checked) {
+            doc.classList.add('perf-no-animations');
+        } else {
+            doc.classList.remove('perf-no-animations');
+        }
+
+        if (this.perfToggles.shadows && this.perfToggles.shadows.checked) {
+            doc.classList.add('perf-no-shadows');
+        } else {
+            doc.classList.remove('perf-no-shadows');
+        }
+    }
+
+    updateActiveNavItem(activeItem) {
+        if (!activeItem) return;
+        this.settingsNavItems.forEach(item => item.classList.remove('active'));
+        activeItem.classList.add('active');
+    }
+
+    handleSettingsScroll() {
+        if (!this.settingsScrollArea) return;
+
+        const sections = document.querySelectorAll('.settings-content-section');
+        let currentSectionId = '';
+
+        // Focus point is 25% down the visible scroll area
+        const triggerOffset = this.settingsScrollArea.clientHeight * 0.25;
+        const scrollPosition = this.settingsScrollArea.scrollTop;
+
+        // Check if we've reached the very bottom of the scroll area
+        const isAtBottom = scrollPosition + this.settingsScrollArea.clientHeight >= this.settingsScrollArea.scrollHeight - 50;
+
+        if (isAtBottom && sections.length > 0) {
+            currentSectionId = sections[sections.length - 1].getAttribute('id');
+        } else {
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - this.settingsScrollArea.offsetTop;
+                // If the section's top has passed the 25% focus line
+                if (scrollPosition >= sectionTop - triggerOffset) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+        }
+
+        if (currentSectionId) {
+            const activeNav = Array.from(this.settingsNavItems).find(item => item.getAttribute('data-target') === currentSectionId);
+            if (activeNav) this.updateActiveNavItem(activeNav);
+        }
     }
 
     closeSettings() {
