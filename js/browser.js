@@ -341,7 +341,10 @@ class Browser {
         if (!localStorage.getItem('pins_initialized')) {
             const defaultApps = [
                 { name: 'Coolmath Games', url: 'https://coolmathgames.com', icon: 'CM' },
-                { name: 'GitHub', url: 'https://github.com', icon: 'GH' }
+                { name: 'GitHub', url: 'https://github.com', icon: 'GH' },
+                { name: 'YouTube (Unblocked)', url: 'https://yewtu.be', icon: 'YT' },
+                { name: 'SpenFlix (Movies)', url: 'https://spenflix.com', icon: 'SF' },
+                { name: 'GeForce NOW', url: 'https://www.geforcenow.com', icon: 'GF' }
             ];
             const existing = JSON.parse(localStorage.getItem('custom_apps') || '[]');
 
@@ -1344,12 +1347,24 @@ class Browser {
         }
 
         // Proactive connection recovery for proxied navigation
-        if (input !== 'browser://home' && window.ProxyService.ensureConnection) {
-            try {
-                await window.ProxyService.ensureConnection();
-            } catch (e) {
-                console.warn('[BROWSER] Connection recovery attempt failed:', e);
-                // Continue anyway - the navigation might still work
+        if (input !== 'browser://home') {
+            // CRITICAL: Re-initialize SW before navigation (it may have been terminated during idle)
+            if (window.ProxyService.sendInitSignal) {
+                try {
+                    await window.ProxyService.sendInitSignal();
+                } catch (e) {
+                    console.warn('[BROWSER] SW init signal failed:', e);
+                }
+            }
+
+            // Also verify/recover WebSocket connection
+            if (window.ProxyService.ensureConnection) {
+                try {
+                    await window.ProxyService.ensureConnection();
+                } catch (e) {
+                    console.warn('[BROWSER] Connection recovery attempt failed:', e);
+                    // Continue anyway - the navigation might still work
+                }
             }
         }
 

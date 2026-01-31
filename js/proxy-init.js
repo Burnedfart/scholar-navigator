@@ -242,6 +242,9 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             },
         };
 
+        // Store config globally for recovery after SW restart
+        window.ProxyService.scramjetConfig = scramjetConfig;
+
         // Note: We never run in iframe mode (inception guard aborts early)
 
         window.scramjet = new ScramjetController(scramjetConfig);
@@ -326,11 +329,17 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
             swController = await Promise.race([controllerReady, controllerTimeout]);
         }
 
-        // Send signal to Service Worker
-        const sendInitSignal = async () => {
+        // Send signal to Service Worker - make globally accessible for recovery
+        window.ProxyService.sendInitSignal = async () => {
+            const config = window.ProxyService.scramjetConfig;
+            if (!config) {
+                console.warn('⚠️ [PROXY] No scramjet config available to send');
+                return;
+            }
+
             const msg = {
                 type: 'init_complete',
-                config: scramjetConfig
+                config: config
             };
 
             // 1. Try sending to current controller
@@ -354,10 +363,10 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
         };
 
         // Execute immediately and also listen for controller changes
-        await sendInitSignal();
+        await window.ProxyService.sendInitSignal();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             console.log('🔄 [PROXY] SW controller changed, re-sending signal...');
-            sendInitSignal();
+            window.ProxyService.sendInitSignal();
         });
 
         // 7. Initialize BareMux Transport (only if cross-origin isolated)
@@ -378,16 +387,16 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
                 bareMuxWorkerPath
             };
 
-            // Keep-alive ping interval (every 30 seconds)
+            // Keep-alive ping interval (every 25 seconds) - also re-sends init signal to keep SW alive
             let keepAliveInterval = setInterval(async () => {
                 try {
-                    // BareMux doesn't expose connection status, so we rely on visibility recovery
-                    // This interval keeps the event loop active as a soft keep-alive
-                    console.log('💓 [PROXY] Keep-alive tick');
+                    // Re-send init signal to keep SW initialized (it may have been terminated)
+                    await window.ProxyService.sendInitSignal();
+                    console.log('💓 [PROXY] Keep-alive ping (SW re-initialized)');
                 } catch (e) {
-                    console.warn('⚠️ [PROXY] Keep-alive check failed:', e);
+                    console.warn('⚠️ [PROXY] Keep-alive ping failed:', e);
                 }
-            }, 30000);
+            }, 25000);
 
             // Visibility-based recovery - when user returns to tab after being away
             let lastVisibilityChange = Date.now();
@@ -396,8 +405,13 @@ window.ProxyService.ready = new Promise(async (resolve, reject) => {
                     const timeSinceHidden = Date.now() - lastVisibilityChange;
                     console.log(`👀 [PROXY] Tab became visible (was hidden for ${Math.round(timeSinceHidden / 1000)}s)`);
 
-                    // If tab was hidden for more than 60 seconds, verify/recover connection
-                    if (timeSinceHidden > 60000) {
+                    // CRITICAL: Always re-send init signal when tab becomes visible
+                    // The SW may have been terminated by the browser during idle
+                    console.log('🔄 [PROXY] Re-initializing Service Worker after visibility change...');
+                    await window.ProxyService.sendInitSignal();
+
+                    // If tab was hidden for more than 30 seconds, also verify WebSocket connection
+                    if (timeSinceHidden > 30000) {
                         console.log('🔄 [PROXY] Long idle detected, verifying connection...');
                         try {
                             await window.ProxyService.verifyAndRecoverConnection();
